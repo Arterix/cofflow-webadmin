@@ -161,28 +161,82 @@ npm run dev                           # Vite dev (hot reload)
 
 ---
 
-## Konfigurasi Produksi (opsional)
+## Integrasi Eksternal
 
-Default development pakai SQLite. Untuk produksi, switch ke PostgreSQL di `.env`:
+### Supabase (Storage + Postgres opsional)
+
+1. Buat project di [supabase.com](https://supabase.com) → Settings → API → copy `Project URL` + `secret key` (atau `service_role` key di project lama).
+2. Storage → **New bucket**: `cofflow-images`, public ON.
+3. SQL Editor → jalankan policy:
+   ```sql
+   CREATE POLICY "public_read" ON storage.objects
+   FOR SELECT USING (bucket_id = 'cofflow-images');
+
+   CREATE POLICY "auth_upload" ON storage.objects
+   FOR INSERT WITH CHECK (bucket_id = 'cofflow-images');
+   ```
+4. Isi `.env`:
+   ```env
+   SUPABASE_URL=https://xxxxxxx.supabase.co
+   SUPABASE_KEY=sb_secret_...
+   SUPABASE_BUCKET=cofflow-images
+   ```
+5. **Opsional** — switch DB dari SQLite ke Supabase Postgres (Settings → Database → Connection string):
+   ```env
+   DB_CONNECTION=pgsql
+   DB_HOST=db.xxxxxxx.supabase.co
+   DB_PORT=5432
+   DB_DATABASE=postgres
+   DB_USERNAME=postgres
+   DB_PASSWORD=...
+   ```
+   Lalu `php artisan migrate --seed`.
+
+### Firebase Cloud Messaging
+
+1. Buat project di [Firebase Console](https://console.firebase.google.com) → Project Settings → **Service accounts** tab.
+2. Klik **Generate new private key** (bahasa apapun — JSON yang di-download identik).
+3. Pindahkan ke `storage/app/firebase-credentials.json`:
+   ```powershell
+   Move-Item "$env:USERPROFILE\Downloads\*firebase-adminsdk*.json" "storage\app\firebase-credentials.json"
+   ```
+4. Pastikan **Cloud Messaging API (V1)** Enabled di Project Settings → Cloud Messaging.
+5. Install SDK + isi `.env`:
+   ```bash
+   composer require kreait/laravel-firebase
+   ```
+   ```env
+   FIREBASE_CREDENTIALS=storage/app/firebase-credentials.json
+   FIREBASE_PROJECT_ID=cofflow-backend
+   ```
+6. `FcmService::dispatch` ([app/Services/FcmService.php](app/Services/FcmService.php)) sudah ter-wire ke `kreait/laravel-firebase`. Notifikasi otomatis persist ke DB + kirim FCM bila `user.fcm_token` terisi.
+
+### Midtrans (opsional)
 
 ```env
-DB_CONNECTION=pgsql
-DB_HOST=your-supabase-host
-DB_PORT=5432
-DB_DATABASE=postgres
-DB_USERNAME=postgres
-DB_PASSWORD=...
+MIDTRANS_SERVER_KEY=
+MIDTRANS_CLIENT_KEY=
+MIDTRANS_IS_PRODUCTION=false
+MIDTRANS_WEBHOOK_SECRET=
 ```
 
-Integrasi opsional (kosongkan kalau belum dipakai):
-- **Supabase Storage** — `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_BUCKET` (untuk foto menu)
-- **Midtrans** — `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION`
-- **Firebase FCM** — `FIREBASE_CREDENTIALS` (path JSON), `FIREBASE_PROJECT_ID`
+### Verifikasi
 
-File-file yang **tidak boleh** ter-commit:
+```bash
+php artisan config:clear
+php artisan tinker
+>>> config('services.supabase')
+>>> config('services.firebase')
+>>> app('firebase.messaging')      # Kreait\Firebase\Messaging instance
+```
+
+### File yang TIDAK boleh ter-commit
+
 - `.env`
 - `storage/app/firebase-credentials.json`
 - `database/database.sqlite`
+
+Jangan paste private key / secret di chat, log, atau commit message. Rotate kalau bocor (Firebase: IAM → delete key; Supabase: Settings → API → rotate).
 
 ---
 
