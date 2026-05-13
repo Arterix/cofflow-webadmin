@@ -131,7 +131,6 @@ resources/
 routes/
 ├── api.php                   # REST API (mobile)
 └── web.php                   # Admin dashboard (web)
-context/                      # Spec dokumen (requirements, design, tasks)
 ```
 
 ---
@@ -143,8 +142,6 @@ context/                      # Spec dokumen (requirements, design, tasks)
 - **Discount tidak stack** — saat banyak diskon eligible per item, hanya nilai terbesar yang dipakai.
 - **Status transitions** divalidasi di `StaffOrderController` API:
   `pending → processing → ready → completed`, `pending|processing → cancelled` (restore stok).
-
-Lihat [context/design(2).md](context/design(2).md) untuk skema DB, API map, dan business logic lengkap.
 
 ---
 
