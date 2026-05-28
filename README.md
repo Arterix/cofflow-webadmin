@@ -2,7 +2,7 @@
 
 Web admin dashboard untuk coffee shop **Cofflow**. Mengelola menu, stok bahan baku, diskon, order, pegawai, opname stok, dan laporan penjualan.
 
-Bagian dari ekosistem Cofflow: backend REST API + admin web (repo ini) + Flutter customer/employee app.
+Bagian dari ekosistem Cofflow: backend REST API + admin web (repo ini) + Flutter customer/employee app. Kedua app mobile (`customer_app`, `employee_app`) konsumsi API ini lewat token Sanctum (`Authorization: Bearer`) — tidak ada koneksi DB langsung dari mobile.
 
 Stack: **Laravel 11**, **PHP 8.2+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/SQLite**.
 
@@ -216,6 +216,60 @@ MIDTRANS_CLIENT_KEY=
 MIDTRANS_IS_PRODUCTION=false
 MIDTRANS_WEBHOOK_SECRET=
 ```
+
+### Cloudflare Tunnel (expose lokal ke mobile app)
+
+Mobile app (employee/customer) butuh HTTPS endpoint untuk hit Laravel API. `cloudflared` tunnel = cara cepat tanpa deploy.
+
+**Penting:** tunnel hanya forward traffic, BUKAN runtime PHP. Laravel tetap harus jalan di `localhost:8000` (via `php artisan serve`, Laragon, Herd, atau Valet). Kalau tidak ada yang listen di port itu → tunnel balas `502 Bad Gateway`.
+
+Minimum setup = 2 terminal:
+- Terminal 1: `php artisan serve` (atau Laragon/Herd auto-jalan)
+- Terminal 2: `cloudflared tunnel --url http://localhost:8000`
+
+Vite (`npm run dev`) opsional — hanya perlu kalau lagi edit Blade/CSS dengan hot reload. Bukan pengganti `artisan serve`.
+
+#### Langkah
+
+1. Install [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) lalu start tunnel:
+   ```powershell
+   cloudflared tunnel --url http://localhost:8000
+   ```
+   Output cetak URL seperti `https://xxxx-xxxx-xxxx.trycloudflare.com`. Copy.
+
+2. Update `.env`:
+   ```env
+   APP_URL=https://xxxx-xxxx-xxxx.trycloudflare.com
+   SANCTUM_STATEFUL_DOMAINS=xxxx-xxxx-xxxx.trycloudflare.com
+   SESSION_DOMAIN=.trycloudflare.com
+   FRONTEND_URL=https://xxxx-xxxx-xxxx.trycloudflare.com
+   ```
+   Lalu:
+   ```powershell
+   php artisan config:clear
+   php artisan route:clear
+   ```
+
+3. Trust proxy header dari Cloudflare biar Laravel kenali request sebagai HTTPS (hindari mixed-content + redirect loop). Edit [bootstrap/app.php](bootstrap/app.php) — di dalam `withMiddleware`:
+   ```php
+   $middleware->trustProxies(at: '*');
+   ```
+
+4. Point mobile app ke tunnel URL via `--dart-define`:
+   ```bash
+   flutter run --dart-define=API_BASE_URL=https://xxxx-xxxx-xxxx.trycloudflare.com/api
+   ```
+
+5. Smoke test:
+   ```powershell
+   curl -sf -o $null -w "Status: %{http_code}`n" https://xxxx-xxxx-xxxx.trycloudflare.com/up
+   ```
+
+#### Catatan
+
+- Quick tunnel (`--url`) = hostname random tiap restart. Untuk URL stabil pakai named tunnel: `cloudflared tunnel create cofflow` + DNS route + `config.yml` (butuh akun Cloudflare + domain).
+- Tiap rotate hostname → update `.env` + restart `php artisan serve` + rebuild/restart mobile app.
+- Webhook eksternal (Midtrans callback, FCM token registration) ikut pakai URL tunnel baru.
 
 ### Verifikasi
 
