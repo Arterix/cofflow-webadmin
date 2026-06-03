@@ -265,9 +265,50 @@ Vite (`npm run dev`) opsional — hanya perlu kalau lagi edit Blade/CSS dengan h
    curl -sf -o $null -w "Status: %{http_code}`n" https://xxxx-xxxx-xxxx.trycloudflare.com/up
    ```
 
+#### Named tunnel (URL stabil — butuh domain sendiri)
+
+Quick tunnel (`--url`) ganti hostname tiap restart. Untuk URL tetap (mis. `api.cofflow.my.id`) pakai named tunnel. Butuh akun Cloudflare + domain yang sudah di-manage Cloudflare.
+
+**JANGAN bikin A record manual dengan isi IPv4.** Tunnel tidak punya IP tetap. DNS record yang benar = CNAME ke `<tunnel-id>.cfargotunnel.com`, dan `cloudflared` yang bikin otomatis (langkah 4 di bawah).
+
+1. **Pastikan domain Active dulu.** Kalau di dashboard status masih `pending`, Cloudflare belum pegang DNS-mu dan tidak ada record yang jalan. Buka **Overview** → Cloudflare kasih 2 nameserver (mis. `xena.ns.cloudflare.com`). Login ke registrar tempat beli domain → ganti nameserver mereka dengan 2 dari Cloudflare. Tunggu sampai status berubah jadi **Active** (bisa beberapa menit–jam).
+
+2. Login tunnel (browser kebuka, pilih domain-nya):
+   ```powershell
+   cloudflared tunnel login
+   ```
+
+3. Buat tunnel — catat tunnel ID + path file credentials `.json` yang dicetak:
+   ```powershell
+   cloudflared tunnel create cofflow
+   ```
+
+4. Bikin DNS record otomatis (ini pengganti dialog "Add record" manual):
+   ```powershell
+   cloudflared tunnel route dns cofflow api.cofflow.my.id
+   ```
+   CNAME `api` muncul sendiri di DNS Records.
+
+5. Buat `C:\Users\<user>\.cloudflared\config.yml`:
+   ```yaml
+   tunnel: cofflow
+   credentials-file: C:\Users\<user>\.cloudflared\<TUNNEL-ID>.json
+   ingress:
+     - hostname: api.cofflow.my.id
+       service: http://localhost:8000
+     - service: http_status:404
+   ```
+
+6. Pastikan Laravel jalan (`php artisan serve`), lalu jalankan tunnel:
+   ```powershell
+   cloudflared tunnel run cofflow
+   ```
+
+7. Update `.env` (lihat langkah 2 di atas) pakai `api.cofflow.my.id`, lalu `php artisan config:clear`.
+
 #### Catatan
 
-- Quick tunnel (`--url`) = hostname random tiap restart. Untuk URL stabil pakai named tunnel: `cloudflared tunnel create cofflow` + DNS route + `config.yml` (butuh akun Cloudflare + domain).
+- Quick tunnel (`--url`) = hostname random tiap restart. Named tunnel (di atas) = URL tetap.
 - Tiap rotate hostname → update `.env` + restart `php artisan serve` + rebuild/restart mobile app.
 - Webhook eksternal (Midtrans callback, FCM token registration) ikut pakai URL tunnel baru.
 
