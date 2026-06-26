@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -7,29 +7,29 @@
 
 @theme {
     /* Cofflow brand colors — see context/CLAUDE.md */
-    --color-primary: #3E2723;
-    --color-primary-50: #F5EBE9;
-    --color-primary-100: #E5D2CD;
-    --color-primary-700: #2A1B19;
+    --color-primary: #3e2723;
+    --color-primary-50: #f5ebe9;
+    --color-primary-100: #e5d2cd;
+    --color-primary-700: #2a1b19;
 
     /* Deeper cream as page bg so card/border/text contrast pops */
-    --color-secondary: #DCD2B0;
-    --color-secondary-light: #F5F5DC;
-    --color-secondary-dark: #C7BB94;
+    --color-secondary: #dcd2b0;
+    --color-secondary-light: #f5f5dc;
+    --color-secondary-dark: #c7bb94;
 
-    --color-accent: #81C784;
-    --color-accent-dark: #5FAE63;
-    --color-accent-50: #EAF6EB;
+    --color-accent: #c8963c;
+    --color-accent-dark: #a67a2e;
+    --color-accent-50: #fdf3dc;
 
-    --color-alert: #E57373;
-    --color-alert-dark: #C45A5A;
-    --color-alert-50: #FCEBEB;
+    --color-alert: #e57373;
+    --color-alert-dark: #c45a5a;
+    --color-alert-50: #fcebeb;
 
     /* Soft warm off-white — replaces hard #FFFFFF for all bg-white cards */
-    --color-white: #FBF7EA;
+    --color-white: #fbf7ea;
 
-    --font-sans: 'Roboto', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -45,7 +45,7 @@
     }
 
     /* Form controls should pick up the warm surface, not blast pure white */
-    input:not([type='checkbox']):not([type='radio']),
+    input:not([type="checkbox"]):not([type="radio"]),
     select,
     textarea {
         background-color: var(--color-white);
@@ -137,11 +137,11 @@
 
 /* Info / Neutral — warm stone gray (BOM, secondary actions) */
 .btn-info {
-    background-color: #9A9285;
+    background-color: #9a9285;
     color: #ffffff;
 }
 .btn-info:hover {
-    background-color: #7E776B;
+    background-color: #7e776b;
 }
 
 /* ─────────── Status pills (shared semantic badges) ───────────
@@ -167,7 +167,7 @@
     white-space: nowrap;
 }
 .status-pill::before {
-    content: '';
+    content: "";
     height: 0.45rem;
     width: 0.45rem;
     border-radius: 9999px;
@@ -186,19 +186,19 @@
     border-color: var(--color-alert);
 }
 .status-pill.is-warning {
-    background-color: #FDF3D9;
-    color: #8A6A18;
-    border-color: #E7C770;
+    background-color: #fdf3d9;
+    color: #8a6a18;
+    border-color: #e7c770;
 }
 .status-pill.is-info {
-    background-color: #E2EFFB;
-    color: #1F5F9E;
-    border-color: #8FB8E0;
+    background-color: #e2effb;
+    color: #1f5f9e;
+    border-color: #8fb8e0;
 }
 .status-pill.is-muted {
-    background-color: #F1F1EE;
-    color: #6B6B66;
-    border-color: #D9D9D2;
+    background-color: #f1f1ee;
+    color: #6b6b66;
+    border-color: #d9d9d2;
 }
 .status-pill.is-strong {
     background-color: var(--color-primary);
