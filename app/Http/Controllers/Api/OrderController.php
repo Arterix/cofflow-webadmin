@@ -81,20 +81,22 @@ class OrderController extends Controller
             return $this->error('payment_channel wajib diisi untuk virtual_account', 422);
         }
 
-        // 1. Validate stock
-        $this->stockService->validateStock(array_map(
-            fn ($i) => ['menu_id' => $i['menu_id'], 'quantity' => $i['quantity']],
-            $data['items']
-        ));
-
-        // 2. Calculate total
+        // 1. Calculate total (outside transaction — read-only)
         $calc = $this->discountService->calculateOrderTotal(
             $data['items'],
             $data['promo_code'] ?? null
         );
 
-        // 3. Create order in transaction
-        $order = DB::transaction(function () use ($request, $data, $calc) {
+        // 2. Create order, validate & deduct stock — all inside one transaction
+        //    for atomicity. If stock is insufficient, the entire order rolls back.
+        $criticals = [];
+        $order = DB::transaction(function () use ($request, $data, $calc, &$criticals) {
+            // Validate stock with locks (StockService reads ingredients with lockForUpdate)
+            $this->stockService->validateStock(array_map(
+                fn ($i) => ['menu_id' => $i['menu_id'], 'quantity' => $i['quantity']],
+                $data['items']
+            ));
+
             $order = Order::create([
                 'user_id' => $request->user()->id,
                 'cashier_id' => $request->user()->isKasir() || $request->user()->isAdmin()
@@ -143,11 +145,13 @@ class OrderController extends Controller
                 $calc['promo']->increment('used_count');
             }
 
+            // Deduct stock inside the transaction (with lockForUpdate in StockService)
+            $criticals = $this->stockService->deductForOrder($order->fresh('items'));
+
             return $order;
         });
 
-        // 4. Deduct stock now that order_items exist; emit critical alerts
-        $criticals = $this->stockService->deductForOrder($order->fresh('items'));
+        // Send critical stock alerts AFTER commit (avoid holding DB locks during FCM calls)
         foreach ($criticals as $ingredient) {
             $this->fcmService->sendStockCriticalAlert($ingredient);
         }

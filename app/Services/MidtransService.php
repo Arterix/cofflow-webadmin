@@ -68,14 +68,20 @@ class MidtransService
 
     public function verifyWebhookSignature(array $payload): bool
     {
-        $serverKey = (string) config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', ''));
+        $serverKey = (string) config('services.midtrans.server_key');
         $orderId = $payload['order_id'] ?? '';
         $statusCode = $payload['status_code'] ?? '';
         $grossAmount = $payload['gross_amount'] ?? '';
         $signature = $payload['signature_key'] ?? '';
 
         if (! $serverKey) {
-            // No server key configured — accept in development to allow local webhook testing.
+            // Only bypass signature check in local/testing — reject in production
+            if (app()->environment('production')) {
+                Log::error('[Midtrans] Webhook rejected: no server key configured in production');
+                return false;
+            }
+
+            Log::info('[Midtrans] No server key — accepting webhook in development mode');
             return true;
         }
 
@@ -91,8 +97,8 @@ class MidtransService
 
     private function call(array $payload): array
     {
-        $serverKey = (string) config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', ''));
-        $isProduction = (bool) config('services.midtrans.is_production', env('MIDTRANS_IS_PRODUCTION', false));
+        $serverKey = (string) config('services.midtrans.server_key');
+        $isProduction = (bool) config('services.midtrans.is_production');
 
         if (! $serverKey) {
             Log::info('[Midtrans stub] no server key — returning mock response', $payload);

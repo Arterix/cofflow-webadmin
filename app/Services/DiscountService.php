@@ -7,6 +7,7 @@ use App\Models\Menu;
 use App\Models\ProductDiscount;
 use App\Models\PromoCode;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class DiscountService
@@ -94,8 +95,24 @@ class DiscountService
         $totalItemDiscount = 0.0;
         $itemBreakdown = [];
 
+        // Batch-load all menus in a single query (fixes N+1)
+        $menuIds = array_column($items, 'menu_id');
+        $menus = Menu::whereIn('id', $menuIds)->get()->keyBy('id');
+
+        // Batch-load all active product discounts for these menus (fixes N+1)
+        $productDiscounts = ProductDiscount::whereIn('menu_id', $menuIds)
+            ->where('is_active', true)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->orderByDesc('value')
+            ->get()
+            ->groupBy('menu_id');
+
+        // Batch-load all active event discounts for these menus (fixes N+1)
+        $eventDiscounts = $this->batchActiveEventDiscounts($menuIds, $today);
+
         foreach ($items as $item) {
-            $menu = Menu::find($item['menu_id']);
+            $menu = $menus->get($item['menu_id']);
             if (! $menu) {
                 throw ValidationException::withMessages([
                     'items' => ["Menu ID {$item['menu_id']} tidak ditemukan"],
@@ -104,7 +121,13 @@ class DiscountService
 
             $quantity = (int) $item['quantity'];
             $unitPrice = (float) $menu->price;
-            $perUnitDiscount = $this->calculatePerUnitDiscount($menu, $today);
+
+            // Calculate per-unit discount from pre-loaded collections
+            $perUnitDiscount = $this->calculatePerUnitDiscountFromCollections(
+                $menu,
+                $productDiscounts->get($menu->id, collect()),
+                $eventDiscounts->get($menu->id, collect())
+            );
             $itemTotal = ($unitPrice - $perUnitDiscount) * $quantity;
 
             $condimentTotal = 0.0;
@@ -155,5 +178,54 @@ class DiscountService
         }
 
         return min($value, $base);
+    }
+
+    /**
+     * Calculate per-unit discount from pre-loaded discount collections (avoids per-item queries).
+     */
+    private function calculatePerUnitDiscountFromCollections(
+        Menu $menu,
+        Collection $productDiscounts,
+        Collection $eventDiscounts
+    ): float {
+        $price = (float) $menu->price;
+
+        // Product discounts are already sorted by value desc, take the first (highest)
+        $product = $productDiscounts->first();
+        $event = $eventDiscounts->first();
+
+        $productAmount = $product ? $this->amountFromRule($product->type, (float) $product->value, $price) : 0.0;
+        $eventAmount = $event ? $this->amountFromRule($event->type, (float) $event->value, $price) : 0.0;
+
+        return max($productAmount, $eventAmount);
+    }
+
+    /**
+     * Batch-load active event discounts for multiple menu IDs.
+     *
+     * @param  array<int>  $menuIds
+     * @return Collection  Keyed by menu_id
+     */
+    private function batchActiveEventDiscounts(array $menuIds, Carbon $date): Collection
+    {
+        $eventDiscounts = EventDiscount::whereHas('menus', fn ($q) => $q->whereIn('menus.id', $menuIds))
+            ->where('is_active', true)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->with(['menus' => fn ($q) => $q->whereIn('menus.id', $menuIds)])
+            ->get();
+
+        // Group by menu_id for O(1) lookup
+        $grouped = collect();
+        foreach ($eventDiscounts as $discount) {
+            foreach ($discount->menus as $menu) {
+                if (! $grouped->has($menu->id)) {
+                    $grouped[$menu->id] = collect();
+                }
+                $grouped[$menu->id]->push($discount);
+            }
+        }
+
+        return $grouped;
     }
 }

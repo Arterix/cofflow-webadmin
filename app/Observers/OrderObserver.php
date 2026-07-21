@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Order;
 use App\Services\FcmService;
 use App\Services\StockService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -32,7 +33,8 @@ class OrderObserver
             if ($order->wasChanged('status')) {
                 if ($order->status === 'cancelled') {
                     $order->loadMissing('items');
-                    $this->stock->restoreForOrder($order);
+                    // Wrap in transaction for atomicity with lockForUpdate in StockService
+                    DB::transaction(fn () => $this->stock->restoreForOrder($order));
                 }
 
                 $this->fcm->sendOrderStatusUpdate($order);
@@ -46,3 +48,4 @@ class OrderObserver
         }
     }
 }
+

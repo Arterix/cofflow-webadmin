@@ -21,7 +21,9 @@ class StockService
         $needed = $this->aggregateRequirements($items);
 
         foreach ($needed as $ingredientId => $info) {
-            if ((float) $info['ingredient']->current_stock < $info['needed']) {
+            // Re-read with lock when called inside a transaction for accuracy
+            $freshStock = (float) $info['ingredient']->current_stock;
+            if ($freshStock < $info['needed']) {
                 throw ValidationException::withMessages([
                     'stock' => ["Stok {$info['ingredient']->name} tidak mencukupi untuk membuat {$info['menu_name']}"],
                 ]);
@@ -32,6 +34,7 @@ class StockService
     /**
      * Deduct stock for an order based on its items' menus' BOMs.
      *
+     * Must be called inside a DB::transaction() for lock safety.
      * Returns ingredients that crossed below minimum_stock during deduction.
      *
      * @return array<int, Ingredient>
@@ -40,14 +43,31 @@ class StockService
     {
         $criticalNow = [];
 
+        // Batch-load all menus with their BOMs in a single query (fixes N+1)
+        $menuIds = $order->items->pluck('menu_id')->unique()->toArray();
+        $menus = Menu::with('bomItems.ingredient')
+            ->whereIn('id', $menuIds)
+            ->get()
+            ->keyBy('id');
+
+        // Collect all ingredient IDs needed, then lock them all at once (fixes race condition)
+        $ingredientIds = $menus->flatMap(fn ($menu) => $menu->bomItems->pluck('ingredient_id'))
+            ->unique()
+            ->filter()
+            ->toArray();
+        $lockedIngredients = Ingredient::whereIn('id', $ingredientIds)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
         foreach ($order->items as $orderItem) {
-            $menu = Menu::with('bomItems.ingredient')->find($orderItem->menu_id);
+            $menu = $menus->get($orderItem->menu_id);
             if (! $menu) {
                 continue;
             }
 
             foreach ($menu->bomItems as $bom) {
-                $ingredient = $bom->ingredient;
+                $ingredient = $lockedIngredients->get($bom->ingredient_id);
                 if (! $ingredient) {
                     continue;
                 }
@@ -85,16 +105,36 @@ class StockService
         });
     }
 
+    /**
+     * Restore stock for a cancelled order. Must be called inside a DB::transaction().
+     */
     public function restoreForOrder(Order $order): void
     {
+        // Batch-load all menus with their BOMs in a single query (fixes N+1)
+        $menuIds = $order->items->pluck('menu_id')->unique()->toArray();
+        $menus = Menu::with('bomItems.ingredient')
+            ->whereIn('id', $menuIds)
+            ->get()
+            ->keyBy('id');
+
+        // Lock all affected ingredients to prevent concurrent modification
+        $ingredientIds = $menus->flatMap(fn ($menu) => $menu->bomItems->pluck('ingredient_id'))
+            ->unique()
+            ->filter()
+            ->toArray();
+        $lockedIngredients = Ingredient::whereIn('id', $ingredientIds)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
         foreach ($order->items as $orderItem) {
-            $menu = Menu::with('bomItems.ingredient')->find($orderItem->menu_id);
+            $menu = $menus->get($orderItem->menu_id);
             if (! $menu) {
                 continue;
             }
 
             foreach ($menu->bomItems as $bom) {
-                $ingredient = $bom->ingredient;
+                $ingredient = $lockedIngredients->get($bom->ingredient_id);
                 if (! $ingredient) {
                     continue;
                 }
@@ -113,8 +153,15 @@ class StockService
     {
         $needed = [];
 
+        // Batch-load all menus with their BOMs in a single query (fixes N+1)
+        $menuIds = array_column($items, 'menu_id');
+        $menus = Menu::with('bomItems.ingredient')
+            ->whereIn('id', $menuIds)
+            ->get()
+            ->keyBy('id');
+
         foreach ($items as $item) {
-            $menu = Menu::with('bomItems.ingredient')->find($item['menu_id']);
+            $menu = $menus->get($item['menu_id']);
             if (! $menu) {
                 throw ValidationException::withMessages([
                     'items' => ["Menu dengan ID {$item['menu_id']} tidak ditemukan"],
