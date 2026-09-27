@@ -5,9 +5,8 @@
 @section('content')
 <div class="w-full max-w-md">
     <div class="text-center mb-6">
-        <span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-secondary font-display font-bold text-2xl shadow-lg">C</span>
-        <h1 class="mt-3 font-display font-semibold text-2xl text-primary">Cofflow Admin</h1>
-        <p class="text-sm text-gray-500">Masuk untuk mengelola coffee shop kamu</p>
+        {{-- Ubah nilai h-16 w-16 di bawah ini untuk mengatur ukuran logo (contoh: h-20 w-20 untuk lebih besar) --}}
+        <img src="{{ asset('images/koncospace-logo.png') }}" alt="Koncospace" class="inline-block h-[50] w-[50] object-contain" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
