@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Dashboard · Cofflow Admin')
+@section('title', 'Dashboard · Konco Space Admin')
 @section('page_title', 'Dashboard')
 @section('page_sub', 'Ringkasan performa coffee shop hari ini')
 

@@ -20,7 +20,7 @@
         <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2">
             <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary font-display font-bold">C</span>
             <div>
-                <div class="font-display font-semibold text-lg tracking-wide leading-none">Cofflow</div>
+                <div class="font-display font-semibold text-lg tracking-wide leading-none">Konco Space</div>
                 <p class="text-xs opacity-70 mt-1">Admin Dashboard</p>
             </div>
         </a>

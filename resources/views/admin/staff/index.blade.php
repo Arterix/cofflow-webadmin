@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Pegawai · Cofflow Admin')
+@section('title', 'Pegawai · Konco Space Admin')
 @section('page_title', 'Manajemen Pegawai')
 @section('page_sub', 'Akun kasir dan admin')
 

@@ -93,7 +93,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 // API root status (so visiting / when not logged-in shows admin login)
 Route::get('/api-status', function () {
     return response()->json([
-        'name' => 'Cofflow API',
+        'name' => 'Konco Space API',
         'status' => 'ok',
         'docs' => 'See /api/* endpoints — use POST /api/auth/login to obtain a Sanctum bearer token.',
     ]);

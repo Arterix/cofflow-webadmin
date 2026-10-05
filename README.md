@@ -1,8 +1,8 @@
-# Cofflow Admin Dashboard
+﻿# Konco Space Admin Dashboard
 
-Web admin dashboard untuk coffee shop **Cofflow**. Mengelola menu, stok bahan baku, diskon, order, pegawai, opname stok, dan laporan penjualan.
+Web admin dashboard untuk coffee shop **Konco Space**. Mengelola menu, stok bahan baku, diskon, order, pegawai, opname stok, dan laporan penjualan.
 
-Bagian dari ekosistem Cofflow: backend REST API + admin web (repo ini) + Flutter customer/employee app. Kedua app mobile (`customer_app`, `employee_app`) konsumsi API ini lewat token Sanctum (`Authorization: Bearer`) — tidak ada koneksi DB langsung dari mobile.
+Bagian dari ekosistem Konco Space: backend REST API + admin web (repo ini) + Flutter customer/employee app. Kedua app mobile (`customer_app`, `employee_app`) konsumsi API ini lewat token Sanctum (`Authorization: Bearer`) — tidak ada koneksi DB langsung dari mobile.
 
 Stack: **Laravel 11**, **PHP 8.2+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/SQLite**.
 
@@ -55,8 +55,8 @@ Typography: **Poppins** untuk display/heading, **Roboto** untuk body.
 
 ```bash
 # 1. Clone & install dependencies
-git clone <repo-url> cofflow-admin
-cd cofflow-admin
+git clone <repo-url> Konco Space-admin
+cd Konco Space-admin
 composer install
 npm install
 
@@ -79,11 +79,11 @@ php artisan serve    # terminal 2 — Laravel app di http://localhost:8000
 
 | Email | Password | Role |
 |---|---|---|
-| `admin@cofflow.test` | `password` | admin |
-| `kasir@cofflow.test` | `password` | kasir |
-| `customer@cofflow.test` | `password` | customer |
+| `admin@Konco Space.test` | `password` | admin |
+| `kasir@Konco Space.test` | `password` | kasir |
+| `customer@Konco Space.test` | `password` | customer |
 
-Plus 5 customer dummy (`cust1@cofflow.test` … `cust5@cofflow.test`).
+Plus 5 customer dummy (`cust1@Konco Space.test` … `cust5@Konco Space.test`).
 
 ---
 
@@ -163,20 +163,20 @@ npm run dev                           # Vite dev (hot reload)
 ### Supabase (Storage + Postgres opsional)
 
 1. Buat project di [supabase.com](https://supabase.com) → Settings → API → copy `Project URL` + `secret key` (atau `service_role` key di project lama).
-2. Storage → **New bucket**: `cofflow-images`, public ON.
+2. Storage → **New bucket**: `Konco Space-images`, public ON.
 3. SQL Editor → jalankan policy:
    ```sql
    CREATE POLICY "public_read" ON storage.objects
-   FOR SELECT USING (bucket_id = 'cofflow-images');
+   FOR SELECT USING (bucket_id = 'Konco Space-images');
 
    CREATE POLICY "auth_upload" ON storage.objects
-   FOR INSERT WITH CHECK (bucket_id = 'cofflow-images');
+   FOR INSERT WITH CHECK (bucket_id = 'Konco Space-images');
    ```
 4. Isi `.env`:
    ```env
    SUPABASE_URL=https://xxxxxxx.supabase.co
    SUPABASE_KEY=sb_secret_...
-   SUPABASE_BUCKET=cofflow-images
+   SUPABASE_BUCKET=Konco Space-images
    ```
 5. **Opsional** — switch DB dari SQLite ke Supabase Postgres (Settings → Database → Connection string):
    ```env
@@ -204,7 +204,7 @@ npm run dev                           # Vite dev (hot reload)
    ```
    ```env
    FIREBASE_CREDENTIALS=storage/app/firebase-credentials.json
-   FIREBASE_PROJECT_ID=cofflow-backend
+   FIREBASE_PROJECT_ID=Konco Space-backend
    ```
 6. `FcmService::dispatch` ([app/Services/FcmService.php](app/Services/FcmService.php)) sudah ter-wire ke `kreait/laravel-firebase`. Notifikasi otomatis persist ke DB + kirim FCM bila `user.fcm_token` terisi.
 
@@ -267,7 +267,7 @@ Vite (`npm run dev`) opsional — hanya perlu kalau lagi edit Blade/CSS dengan h
 
 #### Named tunnel (URL stabil — butuh domain sendiri)
 
-Quick tunnel (`--url`) ganti hostname tiap restart. Untuk URL tetap (mis. `api.cofflow.my.id`) pakai named tunnel. Butuh akun Cloudflare + domain yang sudah di-manage Cloudflare.
+Quick tunnel (`--url`) ganti hostname tiap restart. Untuk URL tetap (mis. `api.Konco Space.my.id`) pakai named tunnel. Butuh akun Cloudflare + domain yang sudah di-manage Cloudflare.
 
 **JANGAN bikin A record manual dengan isi IPv4.** Tunnel tidak punya IP tetap. DNS record yang benar = CNAME ke `<tunnel-id>.cfargotunnel.com`, dan `cloudflared` yang bikin otomatis (langkah 4 di bawah).
 
@@ -280,31 +280,31 @@ Quick tunnel (`--url`) ganti hostname tiap restart. Untuk URL tetap (mis. `api.c
 
 3. Buat tunnel — catat tunnel ID + path file credentials `.json` yang dicetak:
    ```powershell
-   cloudflared tunnel create cofflow
+   cloudflared tunnel create Konco Space
    ```
 
 4. Bikin DNS record otomatis (ini pengganti dialog "Add record" manual):
    ```powershell
-   cloudflared tunnel route dns cofflow api.cofflow.my.id
+   cloudflared tunnel route dns Konco Space api.Konco Space.my.id
    ```
    CNAME `api` muncul sendiri di DNS Records.
 
 5. Buat `C:\Users\<user>\.cloudflared\config.yml`:
    ```yaml
-   tunnel: cofflow
+   tunnel: Konco Space
    credentials-file: C:\Users\<user>\.cloudflared\<TUNNEL-ID>.json
    ingress:
-     - hostname: api.cofflow.my.id
+     - hostname: api.Konco Space.my.id
        service: http://localhost:8000
      - service: http_status:404
    ```
 
 6. Pastikan Laravel jalan (`php artisan serve`), lalu jalankan tunnel:
    ```powershell
-   cloudflared tunnel run cofflow
+   cloudflared tunnel run Konco Space
    ```
 
-7. Update `.env` (lihat langkah 2 di atas) pakai `api.cofflow.my.id`, lalu `php artisan config:clear`.
+7. Update `.env` (lihat langkah 2 di atas) pakai `api.Konco Space.my.id`, lalu `php artisan config:clear`.
 
 #### Catatan
 
@@ -352,6 +352,6 @@ Grup utama:
 
 ## Lisensi
 
-Kode internal proyek Cofflow. Tidak untuk distribusi publik tanpa izin.
+Kode internal proyek Konco Space. Tidak untuk distribusi publik tanpa izin.
 
 Framework Laravel di-license di bawah [MIT](https://opensource.org/licenses/MIT).

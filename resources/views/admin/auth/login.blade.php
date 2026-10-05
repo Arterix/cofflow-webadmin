@@ -1,12 +1,12 @@
 @extends('admin.layouts.guest')
 
-@section('title', 'Login Admin Â· Cofflow')
+@section('title', 'Login Admin · Konco Space')
 
 @section('content')
 <div class="w-full max-w-md">
     <div class="text-center mb-6">
         <span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-secondary font-display font-bold text-2xl shadow-lg">C</span>
-        <h1 class="mt-3 font-display font-semibold text-2xl text-primary">Cofflow Admin</h1>
+        <h1 class="mt-3 font-display font-semibold text-2xl text-primary">Konco Space Admin</h1>
         <p class="text-sm text-gray-500">Masuk untuk mengelola coffee shop kamu</p>
     </div>
 
@@ -56,7 +56,7 @@
 
         @if (app()->environment('local'))
             <p class="mt-5 text-xs text-gray-500 text-center">
-                Akun seed: <span class="font-mono">admin@cofflow.test</span> / <span class="font-mono">password</span>
+                Akun seed: <span class="font-mono">admin@koncospace.test</span> / <span class="font-mono">password</span>
             </p>
         @endif
     </div>

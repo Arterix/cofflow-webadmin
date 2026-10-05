@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Diskon · Cofflow Admin')
+@section('title', 'Diskon · Konco Space Admin')
 @section('page_title', 'Manajemen Diskon')
 @section('page_sub', 'Diskon produk, kode promo, dan event')
 

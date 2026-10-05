@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Order #'.$order->id.' · Cofflow Admin')
+@section('title', 'Order #'.$order->id.' · Konco Space Admin')
 @section('page_title', 'Order #'.$order->id)
 @section('page_sub', 'Detail pesanan')
 

@@ -6,7 +6,7 @@
 @source '../**/*.js';
 
 @theme {
-    /* Cofflow brand colors — see context/CLAUDE.md */
+    /* Konco Space brand colors — see context/CLAUDE.md */
     --color-primary: #3e2723;
     --color-primary-50: #f5ebe9;
     --color-primary-100: #e5d2cd;

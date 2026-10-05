@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Opname Baru · Cofflow Admin')
+@section('title', 'Opname Baru · Konco Space Admin')
 @section('page_title', 'Opname Stok Baru')
 @section('page_sub', 'Catat stok fisik bahan baku end-of-shift')
 

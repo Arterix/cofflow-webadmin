@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Order Monitor · Cofflow Admin')
+@section('title', 'Order Monitor · Konco Space Admin')
 @section('page_title', 'Order Monitor')
 @section('page_sub', 'Pantau pesanan masuk (read-only)')
 

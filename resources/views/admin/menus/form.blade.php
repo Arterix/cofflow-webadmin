@@ -2,7 +2,7 @@
 
 @php $isEdit = $menu->exists; @endphp
 
-@section('title', ($isEdit ? 'Edit' : 'Tambah').' Menu · Cofflow')
+@section('title', ($isEdit ? 'Edit' : 'Tambah').' Menu · Konco Space')
 @section('page_title', $isEdit ? 'Edit Menu' : 'Tambah Menu')
 @section('page_sub', $isEdit ? 'Perbarui detail menu' : 'Tambah menu baru ke katalog')
 

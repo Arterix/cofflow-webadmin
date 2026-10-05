@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Stok · Cofflow Admin')
+@section('title', 'Stok · Konco Space Admin')
 @section('page_title', 'Manajemen Stok')
 @section('page_sub', 'Bahan baku & restock')
 

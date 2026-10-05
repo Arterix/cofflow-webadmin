@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Kategori · Cofflow Admin')
+@section('title', 'Kategori · Konco Space Admin')
 @section('page_title', 'Kategori Menu')
 @section('page_sub', 'Kelompokkan menu ke dalam kategori')
 

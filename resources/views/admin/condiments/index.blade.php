@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Condiment · Cofflow Admin')
+@section('title', 'Condiment · Konco Space Admin')
 @section('page_title', 'Condiment')
 @section('page_sub', 'Atur grup add-on / pilihan untuk menu')
 

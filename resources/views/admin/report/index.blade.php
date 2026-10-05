@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Laporan Penjualan · Cofflow Admin')
+@section('title', 'Laporan Penjualan · Konco Space Admin')
 @section('page_title', 'Laporan Penjualan')
 @section('page_sub', 'Filter rentang waktu untuk rekap penjualan')
 

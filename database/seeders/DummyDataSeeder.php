@@ -29,7 +29,7 @@ class DummyDataSeeder extends Seeder
         $extraCustomers = [];
         foreach (['Andi Pratama', 'Sari Wulan', 'Budi Hartono', 'Citra Dewi', 'Ridwan Effendi'] as $i => $name) {
             $extraCustomers[] = User::firstOrCreate(
-                ['email' => 'cust'.($i + 1).'@cofflow.test'],
+                ['email' => 'cust'.($i + 1).'@koncospace.test'],
                 [
                     'name' => $name,
                     'phone' => '0812'.str_pad((string) ($i + 100), 8, '0', STR_PAD_LEFT),
@@ -132,7 +132,7 @@ class DummyDataSeeder extends Seeder
         $paymentMethods = ['cash', 'qris', 'virtual_account'];
 
         // Distribute orders across past 7 days. More orders on recent days.
-        $perDay = [12, 14, 11, 16, 18, 22, 24]; // 6 days ago â†’ today
+        $perDay = [12, 14, 11, 16, 18, 22, 24]; // 6 days ago ? today
 
         Order::withoutEvents(function () use ($menus, $statusBuckets, $paymentMethods, $perDay, $customers, $kasir) {
             $orderId = 1;
@@ -143,7 +143,7 @@ class DummyDataSeeder extends Seeder
                 $dailyQueue = 0;
 
                 for ($i = 0; $i < $count; $i++) {
-                    // Spread across business hours 07â€“21, peak around 12 and 18.
+                    // Spread across business hours 07–21, peak around 12 and 18.
                     $hourPool = [7, 8, 9, 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 18, 19, 20];
                     $hour = $hourPool[array_rand($hourPool)];
                     $createdAt = $date->copy()->setTime($hour, random_int(0, 59), random_int(0, 59));
@@ -155,7 +155,7 @@ class DummyDataSeeder extends Seeder
                     $orderType = $isWalkin ? 'walkin' : 'preorder';
                     $paymentMethod = $isWalkin ? 'cash' : $paymentMethods[array_rand($paymentMethods)];
 
-                    // 1â€“3 items.
+                    // 1–3 items.
                     $itemCount = random_int(1, 3);
                     $pickedMenus = $menus->random(min($itemCount, $menus->count()));
 
