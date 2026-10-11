@@ -1,8 +1,8 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Condiment · Konco Space Admin')
-@section('page_title', 'Condiment')
-@section('page_sub', 'Atur grup add-on / pilihan untuk menu')
+@section('title', 'Opsi Tambahan · Konco Space Admin')
+@section('page_title', 'Opsi Tambahan')
+@section('page_sub', 'Atur grup opsi tambahan / kondimen untuk menu')
 
 @section('content')
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -73,7 +73,7 @@
             </details>
         @empty
             <div class="bg-white rounded-2xl border border-primary-100 p-10 text-center text-sm text-gray-500">
-                Belum ada condiment group
+                Belum ada grup opsi tambahan
             </div>
         @endforelse
     </div>

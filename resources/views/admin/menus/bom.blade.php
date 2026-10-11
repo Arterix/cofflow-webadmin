@@ -1,8 +1,8 @@
 @extends('admin.layouts.app')
 
-@section('title', 'BOM · '.$menu->name)
-@section('page_title', 'BOM & Condiment — '.$menu->name)
-@section('page_sub', 'Atur resep bahan baku dan grup condiment menu ini')
+@section('title', 'Resep Menu · '.$menu->name)
+@section('page_title', 'Resep Menu & Opsi Tambahan — '.$menu->name)
+@section('page_sub', 'Atur komposisi bahan baku dan grup opsi tambahan untuk menu ini')
 
 @section('content')
 <form method="POST" action="{{ route('admin.menus.bom.update', $menu) }}" class="max-w-4xl space-y-5">
@@ -10,7 +10,7 @@
     @method('PUT')
 
     <div class="bg-white rounded-2xl border border-primary-100 p-6 shadow-sm">
-        <h2 class="font-display font-semibold text-primary mb-4">Resep Bahan (BOM)</h2>
+        <h2 class="font-display font-semibold text-primary mb-4">Komposisi Bahan Baku (Resep)</h2>
 
         <div id="bom-rows" class="space-y-2">
             @foreach (old('items', $menu->bomItems->map(fn ($b) => ['ingredient_id' => $b->ingredient_id, 'quantity' => $b->quantity])->toArray()) as $i => $row)
@@ -37,7 +37,7 @@
     </div>
 
     <div class="bg-white rounded-2xl border border-primary-100 p-6 shadow-sm">
-        <h2 class="font-display font-semibold text-primary mb-4">Condiment Group</h2>
+        <h2 class="font-display font-semibold text-primary mb-4">Grup Opsi Tambahan</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             @foreach ($allGroups as $g)
                 <label class="flex items-center gap-2 text-sm border border-primary-100 rounded-lg px-3 py-2 hover:bg-secondary/40">

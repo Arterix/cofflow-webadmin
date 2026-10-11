@@ -33,7 +33,7 @@
                         <th class="text-left px-4 py-3">Nama</th>
                         <th class="text-left px-4 py-3">Kategori</th>
                         <th class="text-right px-4 py-3">Harga</th>
-                        <th class="text-center px-4 py-3">BOM</th>
+                        <th class="text-center px-4 py-3">Resep</th>
                         <th class="text-center px-4 py-3">Status</th>
                         <th class="text-right px-4 py-3">Aksi</th>
                     </tr>
@@ -61,7 +61,7 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="inline-flex flex-wrap justify-end gap-1">
-                                    <a href="{{ route('admin.menus.bom.edit', $menu) }}" class="btn-action btn-info">BOM</a>
+                                    <a href="{{ route('admin.menus.bom.edit', $menu) }}" class="btn-action btn-info">Resep</a>
                                     <a href="{{ route('admin.menus.edit', $menu) }}" class="btn-action btn-edit">Edit</a>
                                     <form method="POST" action="{{ route('admin.menus.toggle', $menu) }}" class="inline">
                                         @csrf @method('PATCH')

@@ -1,12 +1,17 @@
 @extends('admin.layouts.guest')
 
-@section('title', 'Login Admin · Konco Space')
+@section('title', 'Login Admin ï¿½ Konco Space')
 
 @section('content')
 <div class="w-full max-w-md">
     <div class="text-center mb-6">
-        <span class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-secondary font-display font-bold text-2xl shadow-lg">C</span>
-        <h1 class="mt-3 font-display font-semibold text-2xl text-primary">Konco Space Admin</h1>
+        <div class="flex justify-center mb-3">
+            <img src="{{ asset('images/logo-konco-space.webp') }}"
+                 alt="Konco Space"
+                 class="h-14 w-auto object-contain"
+                 onerror="this.onerror=null; this.src='{{ asset('images/logo-konco-space.png') }}';" />
+        </div>
+        <h1 class="mt-1 font-display font-semibold text-2xl text-primary">Konco Space Admin</h1>
         <p class="text-sm text-gray-500">Masuk untuk mengelola coffee shop kamu</p>
     </div>
 
