@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\ExpireUnpaidOrders;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureAdmin;
 use Illuminate\Foundation\Application;
@@ -17,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         apiPrefix: 'api',
     )
+    ->withCommands([
+        ExpireUnpaidOrders::class,
+    ])
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
+        // Cek setiap menit untuk order QRIS/VA yang pembayarannya kedaluwarsa
+        $schedule->command('orders:expire-unpaid')->everyMinute()->withoutOverlapping();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => CheckRole::class,
@@ -34,8 +42,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($e instanceof ValidationException) {
                 return response()->json([
                     'success' => false,
-                    'data' => $e->errors(),
                     'message' => $e->getMessage(),
+                    'errors' => $e->errors(),
+                    'data' => $e->errors(),
                 ], 422);
             }
 

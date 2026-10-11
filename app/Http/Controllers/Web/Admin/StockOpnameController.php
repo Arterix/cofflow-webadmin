@@ -85,13 +85,19 @@ class StockOpnameController extends Controller
                 }
                 $system = (float) $ingredient->current_stock;
                 $physical = (float) $row['physical_stock'];
+                $variance = $physical - $system;
+
+                // If variance is zero, discard any reason/notes (no difference to explain)
+                $varianceReason = $variance != 0.0 ? ($row['variance_reason'] ?? null) : null;
+                $itemNotes      = $variance != 0.0 ? ($row['notes'] ?? null) : null;
+
                 $opname->items()->create([
-                    'ingredient_id' => $ingredient->id,
-                    'system_stock' => $system,
-                    'physical_stock' => $physical,
-                    'variance' => $physical - $system,
-                    'variance_reason' => $row['variance_reason'] ?? null,
-                    'notes' => $row['notes'] ?? null,
+                    'ingredient_id'   => $ingredient->id,
+                    'system_stock'    => $system,
+                    'physical_stock'  => $physical,
+                    'variance'        => $variance,
+                    'variance_reason' => $varianceReason,
+                    'notes'           => $itemNotes,
                 ]);
             }
 

@@ -8,6 +8,7 @@ use App\Models\CondimentGroup;
 use App\Models\Ingredient;
 use App\Models\Menu;
 use App\Models\MenuCategory;
+use App\Services\ImageUploadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,9 @@ use Illuminate\View\View;
 
 class MenuController extends Controller
 {
+    public function __construct(
+        protected ImageUploadService $imageUploadService,
+    ) {}
     public function index(Request $request): View
     {
         $menus = Menu::with('category')
@@ -141,8 +145,7 @@ class MenuController extends Controller
         if (! $request->hasFile('image')) {
             return null;
         }
-        $path = $request->file('image')->store('menus', 'public');
 
-        return Storage::disk('public')->url($path);
+        return $this->imageUploadService->upload($request->file('image'), 'menus');
     }
 }

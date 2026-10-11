@@ -14,7 +14,7 @@ class Order extends Model
         'queue_number', 'pickup_time', 'promo_code',
         'subtotal', 'discount_amount', 'total',
         'midtrans_order_id', 'qr_code_url', 'va_number',
-        'payment_expired_at', 'notes',
+        'payment_expired_at', 'stock_restored_at', 'notes',
     ];
 
     protected function casts(): array
@@ -25,6 +25,7 @@ class Order extends Model
             'total' => 'decimal:2',
             'pickup_time' => 'datetime',
             'payment_expired_at' => 'datetime',
+            'stock_restored_at' => 'datetime',
         ];
     }
 

@@ -15,6 +15,20 @@ class DiscountController extends Controller
 {
     use ApiResponse;
 
+    private function validateDiscountValue(string $type, float $value): void
+    {
+        if ($type === 'percentage' && $value > 100) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'value' => ['Diskon persentase tidak boleh melebihi 100%.'],
+            ]);
+        }
+        if ($type === 'nominal' && $value < 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'value' => ['Diskon nominal tidak boleh negatif.'],
+            ]);
+        }
+    }
+
     // ---- Product Discount ----
     public function indexProduct(): JsonResponse
     {
@@ -34,6 +48,8 @@ class DiscountController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
+        $this->validateDiscountValue($data['type'], (float) $data['value']);
+
         $disc = ProductDiscount::create($data + ['is_active' => $data['is_active'] ?? true]);
 
         return $this->success($disc->load('menu'), 'Diskon produk dibuat', 201);
@@ -50,6 +66,11 @@ class DiscountController extends Controller
             'end_date' => ['sometimes', 'date'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
+
+        // Resolve effective type+value for cross-field validation
+        $effectiveType = $data['type'] ?? $disc->type;
+        $effectiveValue = isset($data['value']) ? (float) $data['value'] : (float) $disc->value;
+        $this->validateDiscountValue($effectiveType, $effectiveValue);
 
         $disc->update($data);
 
@@ -84,6 +105,8 @@ class DiscountController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
+        $this->validateDiscountValue($data['type'], (float) $data['value']);
+
         $promo = PromoCode::create(array_merge($data, [
             'max_usage' => $data['max_usage'] ?? 1,
             'min_order' => $data['min_order'] ?? 0,
@@ -106,6 +129,10 @@ class DiscountController extends Controller
             'end_date' => ['sometimes', 'date'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
+
+        $effectiveType = $data['type'] ?? $promo->type;
+        $effectiveValue = isset($data['value']) ? (float) $data['value'] : (float) $promo->value;
+        $this->validateDiscountValue($effectiveType, $effectiveValue);
 
         $promo->update($data);
 
@@ -140,6 +167,8 @@ class DiscountController extends Controller
             'menu_ids.*' => ['integer', 'exists:menus,id'],
         ]);
 
+        $this->validateDiscountValue($data['type'], (float) $data['value']);
+
         $event = DB::transaction(function () use ($data) {
             $event = EventDiscount::create([
                 'name' => $data['name'],
@@ -170,6 +199,10 @@ class DiscountController extends Controller
             'menu_ids' => ['sometimes', 'array'],
             'menu_ids.*' => ['integer', 'exists:menus,id'],
         ]);
+
+        $effectiveType = $data['type'] ?? $event->type;
+        $effectiveValue = isset($data['value']) ? (float) $data['value'] : (float) $event->value;
+        $this->validateDiscountValue($effectiveType, $effectiveValue);
 
         DB::transaction(function () use ($event, $data) {
             $event->update(collect($data)->except('menu_ids')->toArray());

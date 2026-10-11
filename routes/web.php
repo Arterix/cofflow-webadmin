@@ -57,6 +57,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/ingredients', [IngredientController::class, 'store'])->name('ingredients.store');
     Route::put('/ingredients/{ingredient}', [IngredientController::class, 'update'])->name('ingredients.update');
     Route::patch('/ingredients/{ingredient}/restock', [IngredientController::class, 'restock'])->name('ingredients.restock');
+    Route::patch('/ingredients/{ingredient}/adjust', [IngredientController::class, 'adjust'])->name('ingredients.adjust');
     Route::delete('/ingredients/{ingredient}', [IngredientController::class, 'destroy'])->name('ingredients.destroy');
 
     // Discounts

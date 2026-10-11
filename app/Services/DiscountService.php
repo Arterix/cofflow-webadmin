@@ -151,9 +151,12 @@ class DiscountService
     private function amountFromRule(string $type, float $value, float $base): float
     {
         if ($type === 'percentage') {
-            return $base * ($value / 100);
+            // Hard-cap at 100% so a bad DB value can never produce a negative subtotal
+            $safePct = min($value, 100.0);
+            return $base * ($safePct / 100);
         }
 
+        // Nominal: cannot exceed the base price (prevents negative line totals)
         return min($value, $base);
     }
 }

@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StockOpnameItem extends Model
 {
     public const REASONS = [
-        'spillage' => 'Tumpah',
-        'waste' => 'Pemborosan / kadaluarsa',
-        'unrecorded_use' => 'Pemakaian tak tercatat',
-        'theft' => 'Hilang / dugaan pencurian',
+        'spillage'          => 'Tumpah / tercecer',
+        'waste'             => 'Pemborosan / kadaluarsa',
+        'unrecorded_use'    => 'Pemakaian tak tercatat',
+        'lost'              => 'Kehilangan (tidak diketahui sebabnya)',
+        'theft'             => 'Dugaan pencurian',
         'measurement_error' => 'Kesalahan pengukuran',
-        'other' => 'Lainnya',
+        'other'             => 'Lainnya',
     ];
 
     protected $fillable = [

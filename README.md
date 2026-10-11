@@ -4,7 +4,7 @@ Web admin dashboard untuk coffee shop **Konco Space**. Mengelola menu, stok baha
 
 Bagian dari ekosistem Konco Space: backend REST API + admin web (repo ini) + Flutter customer/employee app. Kedua app mobile (`customer_app`, `employee_app`) konsumsi API ini lewat token Sanctum (`Authorization: Bearer`) — tidak ada koneksi DB langsung dari mobile.
 
-Stack: **Laravel 11**, **PHP 8.2+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/SQLite**.
+Stack: **Laravel 13**, **PHP 8.3+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/SQLite**.
 
 ---
 
@@ -12,9 +12,10 @@ Stack: **Laravel 11**, **PHP 8.2+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL
 
 - **Autentikasi role-based** — login admin via web session (Sanctum untuk mobile API).
 - **Dashboard analitik** — kartu ringkasan hari ini, chart penjualan 7 hari, top 5 menu 30 hari, **panel statistik per-candle** (klik bar di chart → drill down statistik harian).
-- **Manajemen Menu** — CRUD menu, upload foto, kategori, status aktif/nonaktif, editor **BOM** (Bill of Materials).
-- **Manajemen Condiment** — grup add-on (single/multi select) dengan **drag-to-reorder** opsi.
-- **Manajemen Stok** — bahan baku, restock, highlight kritis (`current_stock < minimum_stock`).
+- **Manajemen Menu** — CRUD menu, upload foto via `ImageUploadService` (Supabase Storage dengan automatic local fallback), kategori, status aktif/nonaktif, editor **BOM** (Bill of Materials).
+- **Manajemen Condiment & Condiment BOM** — grup add-on (single/multi select) dengan **drag-to-reorder** opsi. Opsi condiment dapat memiliki resep bahan baku sendiri (**Condiment BOM**, misal: opsi *Large* menambah potongan 50ml susu).
+- **Manajemen Stok & Audit Trail** — bahan baku, restock, highlight kritis (`current_stock < minimum_stock`). Setiap perubahan tercatat di tabel `stock_adjustments` (`type`: `manual`, `restock`, `order_deduct`, `order_restore`, `opname`) dengan delta dan user yang bertanggung jawab.
+- **Stock Restoration Guard** — pelacakan `stock_restored_at` pada pesanan untuk menjamin stok hanya dikembalikan tepat satu kali saat pesanan dibatalkan.
 - **Opname Stok** — kasir/admin catat stok fisik end-of-shift, admin review & approve untuk menyesuaikan `current_stock`. Variance tracking + reason code.
 - **Diskon** — 3 jenis: per-produk, kode promo, event discount (multi-menu).
 - **Order Monitor** — daftar order read-only dengan filter status/tipe/tanggal.
@@ -79,11 +80,11 @@ php artisan serve    # terminal 2 — Laravel app di http://localhost:8000
 
 | Email | Password | Role |
 |---|---|---|
-| `admin@Konco Space.test` | `password` | admin |
-| `kasir@Konco Space.test` | `password` | kasir |
-| `customer@Konco Space.test` | `password` | customer |
+| `admin@koncospace.test` | `password` | admin |
+| `kasir@koncospace.test` | `password` | kasir |
+| `customer@koncospace.test` | `password` | customer |
 
-Plus 5 customer dummy (`cust1@Konco Space.test` … `cust5@Konco Space.test`).
+Plus 5 customer dummy (`cust1@koncospace.test` … `cust5@koncospace.test`).
 
 ---
 
@@ -114,16 +115,17 @@ php artisan migrate:fresh --seed
 
 ```
 app/
+├── Console/Commands/         # ExpireUnpaidOrders command (scheduler)
 ├── Http/Controllers/
-│   ├── Api/                  # Mobile REST API endpoints
+│   ├── Api/                  # Mobile REST API endpoints (Sanctum)
 │   └── Web/Admin/            # Web admin Blade controllers
-├── Models/                   # Eloquent models
-├── Observers/OrderObserver   # BOM deduction + FCM trigger on order
-└── Services/                 # StockService, DiscountService, MidtransService, FcmService
+├── Models/                   # Eloquent models (Menu, Order, BomItem, CondimentBomItem, StockAdjustment, dll)
+├── Observers/OrderObserver   # BOM & Condiment BOM deduction + FCM trigger on order
+└── Services/                 # StockService, DiscountService, MidtransService, FcmService, ImageUploadService
 database/
-├── migrations/               # Skema lengkap (~22 file)
+├── migrations/               # Skema lengkap (~25 migration files)
 └── seeders/
-    ├── DatabaseSeeder.php    # Master + base lookups
+    ├── DatabaseSeeder.php    # Master + base lookups & seeded users
     └── DummyDataSeeder.php   # Order + diskon + opname dummy
 resources/
 ├── css/app.css               # Tailwind v4 @theme + button/status classes
@@ -131,14 +133,18 @@ resources/
 routes/
 ├── api.php                   # REST API (mobile)
 └── web.php                   # Admin dashboard (web)
+tests/
+├── Feature/                  # StockConcurrencyAndDeductionTest, ExpireUnpaidOrdersTest, OrderValidationTest
+└── Unit/                     # DiscountValidationTest
 ```
 
 ---
 
 ## Arsitektur Singkat
 
-- **Business logic dibungkus Service**, bukan di Controller. Contoh: `StockService::deductForOrder`, `StockService::applyOpnameAdjustment`, `DiscountService::applyPromoCode`.
-- **OrderObserver** men-trigger stock deduction + FCM. Daftarnya di `AppServiceProvider::boot`.
+- **Business logic dibungkus Service**, bukan di Controller. Contoh: `StockService::deductForOrder`, `StockService::restoreForOrder`, `StockService::recordAdjustment`, `StockService::applyOpnameAdjustment`, `DiscountService::applyPromoCode`.
+- **OrderObserver** men-trigger stock deduction (Menu BOM + Condiment BOM) + FCM. Daftarnya di `AppServiceProvider::boot`.
+- **Stock Audit & Concurrency** — setiap mutasi stok mencatat riwayat di `stock_adjustments`. Restorasi stok dilindungi kolom `stock_restored_at` untuk idempoten.
 - **Discount tidak stack** — saat banyak diskon eligible per item, hanya nilai terbesar yang dipakai.
 - **Status transitions** divalidasi di `StaffOrderController` API:
   `pending → processing → ready → completed`, `pending|processing → cancelled` (restore stok).

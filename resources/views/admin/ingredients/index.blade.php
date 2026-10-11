@@ -41,26 +41,52 @@
                             <td class="px-4 py-3 text-right">{{ rtrim(rtrim((string) $i->current_stock, '0'), '.') }}</td>
                             <td class="px-4 py-3 text-right text-gray-500">{{ rtrim(rtrim((string) $i->minimum_stock, '0'), '.') }}</td>
                             <td class="px-4 py-3 text-right">
+                                {{-- Restock: tambah jumlah --}}
                                 <details class="js-popover inline-block text-left relative">
                                     <summary class="btn-action btn-add cursor-pointer list-none">Restock</summary>
-                                    <form method="POST" action="{{ route('admin.ingredients.restock', $i) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-2 flex gap-1 shadow-lg">
+                                    <form method="POST" action="{{ route('admin.ingredients.restock', $i) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-52 space-y-2 shadow-lg">
                                         @csrf @method('PATCH')
-                                        <input type="number" step="0.001" min="0.001" name="amount" placeholder="+jumlah" class="w-24 rounded-md border border-primary-100 px-2 py-1 text-xs" required />
-                                        <button class="btn-action btn-edit">OK</button>
+                                        <p class="text-xs text-gray-500">Tambah ke stok saat ini ({{ rtrim(rtrim((string) $i->current_stock,'0'),'.') }} {{ $i->unit }})</p>
+                                        <input type="number" step="0.001" min="0.001" name="amount" placeholder="+jumlah" class="w-full rounded-md border border-primary-100 px-2 py-1 text-xs" required />
+                                        <input name="notes" placeholder="Keterangan (opsional)" class="w-full rounded-md border border-primary-100 px-2 py-1 text-xs" />
+                                        <button class="btn-action btn-edit btn-action-block">Tambah</button>
                                     </form>
                                 </details>
 
+                                {{-- Atur Stok: set nilai absolut (koreksi manual) --}}
+                                <details class="js-popover inline-block text-left relative">
+                                    <summary class="btn-action btn-info cursor-pointer list-none">Atur Stok</summary>
+                                    <form method="POST" action="{{ route('admin.ingredients.adjust', $i) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-60 space-y-2 shadow-lg">
+                                        @csrf @method('PATCH')
+                                        <p class="text-xs text-gray-500 font-medium">Atur stok absolut (koreksi fisik)</p>
+                                        <p class="text-xs text-gray-400">Saat ini: {{ rtrim(rtrim((string) $i->current_stock,'0'),'.') }} {{ $i->unit }}</p>
+                                        <input type="number" step="0.001" min="0" name="new_stock" placeholder="Nilai baru" class="w-full rounded-md border border-primary-100 px-2 py-1 text-xs" required />
+                                        <select name="reason" required class="w-full rounded-md border border-primary-100 px-2 py-1 text-xs">
+                                            <option value="">— Pilih alasan —</option>
+                                            <option value="correction">Koreksi catatan</option>
+                                            <option value="opname_manual">Hitung fisik manual</option>
+                                            <option value="damage">Kerusakan / kadaluarsa</option>
+                                            <option value="initial_count">Stok awal</option>
+                                            <option value="other">Lainnya</option>
+                                        </select>
+                                        <input name="notes" placeholder="Catatan (opsional)" class="w-full rounded-md border border-primary-100 px-2 py-1 text-xs" />
+                                        <button class="btn-action btn-edit btn-action-block">Simpan</button>
+                                    </form>
+                                </details>
+
+                                {{-- Edit info bahan --}}
                                 <details class="js-popover inline-block text-left relative">
                                     <summary class="btn-action btn-edit cursor-pointer list-none">Edit</summary>
                                     <form method="POST" action="{{ route('admin.ingredients.update', $i) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
                                         @csrf @method('PUT')
-                                        <input name="name" value="{{ $i->name }}" required class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" />
+                                        <p class="text-xs text-gray-500 font-medium">Edit info bahan</p>
+                                        <input name="name" value="{{ $i->name }}" required class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" placeholder="Nama bahan" />
                                         <select name="unit" class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm">
                                             @foreach (['gram','ml','pcs','liter','kg'] as $u)
                                                 <option value="{{ $u }}" @selected($u === $i->unit)>{{ $u }}</option>
                                             @endforeach
                                         </select>
-                                        <input type="number" step="0.001" min="0" name="minimum_stock" value="{{ $i->minimum_stock }}" required class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" />
+                                        <input type="number" step="0.001" min="0" name="minimum_stock" value="{{ $i->minimum_stock }}" required class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" placeholder="Minimum stok" />
                                         <button class="btn-action btn-edit btn-action-block">Simpan</button>
                                     </form>
                                 </details>

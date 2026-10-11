@@ -14,6 +14,15 @@ use Illuminate\View\View;
 
 class DiscountController extends Controller
 {
+    private function validateDiscountValue(string $type, float $value): void
+    {
+        if ($type === 'percentage' && $value > 100) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'value' => ['Diskon persentase tidak boleh melebihi 100%.'],
+            ]);
+        }
+    }
+
     public function index(Request $request): View
     {
         $tab = $request->query('tab', 'product');
@@ -35,6 +44,7 @@ class DiscountController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
         ]);
+        $this->validateDiscountValue($data['type'], (float) $data['value']);
         ProductDiscount::create($data + ['is_active' => true]);
         return redirect()->route('admin.discounts.index', ['tab' => 'product'])->with('status', 'Diskon produk dibuat');
     }
@@ -56,6 +66,7 @@ class DiscountController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
         ]);
+        $this->validateDiscountValue($data['type'], (float) $data['value']);
         PromoCode::create($data + ['min_order' => $data['min_order'] ?? 0, 'is_active' => true]);
         return redirect()->route('admin.discounts.index', ['tab' => 'promo'])->with('status', 'Kode promo dibuat');
     }
@@ -77,6 +88,8 @@ class DiscountController extends Controller
             'menu_ids' => ['required', 'array', 'min:1'],
             'menu_ids.*' => ['integer', 'exists:menus,id'],
         ]);
+
+        $this->validateDiscountValue($data['type'], (float) $data['value']);
 
         DB::transaction(function () use ($data) {
             $event = EventDiscount::create([

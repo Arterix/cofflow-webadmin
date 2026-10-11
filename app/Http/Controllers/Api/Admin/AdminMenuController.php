@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BomItem;
 use App\Models\Ingredient;
 use App\Models\Menu;
+use App\Services\ImageUploadService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Storage;
 class AdminMenuController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(
+        protected ImageUploadService $imageUploadService,
+    ) {}
 
     public function index(): JsonResponse
     {
@@ -166,10 +171,6 @@ class AdminMenuController extends Controller
 
     private function uploadImage($file): string
     {
-        // TODO: Replace with Supabase Storage upload when SUPABASE_KEY is configured.
-        // For now we store locally under the public disk.
-        $path = $file->store('menus', 'public');
-
-        return Storage::disk('public')->url($path);
+        return $this->imageUploadService->upload($file, 'menus');
     }
 }

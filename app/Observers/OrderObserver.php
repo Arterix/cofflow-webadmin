@@ -28,13 +28,13 @@ class OrderObserver
 
     public function updated(Order $order): void
     {
+        if ($order->wasChanged('status') && $order->status === 'cancelled') {
+            $order->loadMissing('items.condiments.condimentOption.bomItems');
+            $this->stock->restoreForOrder($order);
+        }
+
         try {
             if ($order->wasChanged('status')) {
-                if ($order->status === 'cancelled') {
-                    $order->loadMissing('items');
-                    $this->stock->restoreForOrder($order);
-                }
-
                 $this->fcm->sendOrderStatusUpdate($order);
             }
 
@@ -42,7 +42,7 @@ class OrderObserver
                 $this->fcm->sendPaymentConfirmed($order);
             }
         } catch (Throwable $e) {
-            Log::warning('OrderObserver::updated failed', ['error' => $e->getMessage()]);
+            Log::warning('OrderObserver notification failed', ['error' => $e->getMessage()]);
         }
     }
 }

@@ -6,14 +6,15 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 /**
  * Midtrans payment gateway integration.
  *
- * Calls the Midtrans Snap/Core API in Sandbox mode by default. If credentials
- * are missing or the call fails, the methods return a deterministic mock so
- * local development can continue without real Midtrans access.
+ * Calls the Midtrans Core API (charge endpoint). Requires MIDTRANS_SERVER_KEY
+ * to be set in the environment — throws RuntimeException otherwise so that the
+ * caller receives a clear 500 / error response instead of silently using fake data.
  */
 class MidtransService
 {
@@ -32,11 +33,15 @@ class MidtransService
 
         $response = $this->call($payload);
 
+        $qrUrl = $response['actions'][0]['url'] ?? $response['qr_code_url'] ?? null;
+
+        if (! $qrUrl) {
+            throw new RuntimeException('Midtrans tidak mengembalikan URL QR code. Periksa konfigurasi Midtrans.');
+        }
+
         return [
             'midtrans_order_id' => $midtransOrderId,
-            'qr_code_url' => $response['actions'][0]['url']
-                ?? $response['qr_code_url']
-                ?? "https://api.sandbox.midtrans.com/v2/qris/{$midtransOrderId}/qr-code",
+            'qr_code_url' => $qrUrl,
             'expired_at' => Carbon::now()->addMinutes(15),
         ];
     }
@@ -56,7 +61,11 @@ class MidtransService
 
         $response = $this->call($payload);
 
-        $vaNumber = $response['va_numbers'][0]['va_number'] ?? sprintf('%s%s', strtoupper($bank), str_pad((string) $order->id, 10, '0', STR_PAD_LEFT));
+        $vaNumber = $response['va_numbers'][0]['va_number'] ?? null;
+
+        if (! $vaNumber) {
+            throw new RuntimeException('Midtrans tidak mengembalikan nomor Virtual Account. Periksa konfigurasi Midtrans.');
+        }
 
         return [
             'midtrans_order_id' => $midtransOrderId,
@@ -69,15 +78,18 @@ class MidtransService
     public function verifyWebhookSignature(array $payload): bool
     {
         $serverKey = (string) config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', ''));
-        $orderId = $payload['order_id'] ?? '';
-        $statusCode = $payload['status_code'] ?? '';
-        $grossAmount = $payload['gross_amount'] ?? '';
-        $signature = $payload['signature_key'] ?? '';
 
         if (! $serverKey) {
-            // No server key configured — accept in development to allow local webhook testing.
-            return true;
+            // Server key tidak dikonfigurasi. Tolak semua webhook agar tidak ada
+            // transaksi yang diterima tanpa verifikasi di production.
+            Log::error('[Midtrans] MIDTRANS_SERVER_KEY tidak dikonfigurasi. Webhook ditolak.');
+            return false;
         }
+
+        $orderId     = $payload['order_id'] ?? '';
+        $statusCode  = $payload['status_code'] ?? '';
+        $grossAmount = $payload['gross_amount'] ?? '';
+        $signature   = $payload['signature_key'] ?? '';
 
         $expected = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
 
@@ -89,14 +101,20 @@ class MidtransService
         return 'COFFLOW-'.$order->id.'-'.Carbon::now()->timestamp;
     }
 
+    /**
+     * POST ke Midtrans Core API dan kembalikan body JSON sebagai array.
+     *
+     * @throws RuntimeException  Jika server key tidak dikonfigurasi atau response HTTP gagal.
+     */
     private function call(array $payload): array
     {
-        $serverKey = (string) config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', ''));
+        $serverKey    = (string) config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', ''));
         $isProduction = (bool) config('services.midtrans.is_production', env('MIDTRANS_IS_PRODUCTION', false));
 
         if (! $serverKey) {
-            Log::info('[Midtrans stub] no server key — returning mock response', $payload);
-            return [];
+            throw new RuntimeException(
+                'MIDTRANS_SERVER_KEY belum dikonfigurasi. Isi di file .env untuk mengaktifkan pembayaran QRIS/VA.'
+            );
         }
 
         $base = $isProduction
@@ -109,10 +127,23 @@ class MidtransService
                 ->timeout(30)
                 ->post($base, $payload);
 
+            if ($response->failed()) {
+                Log::error('Midtrans charge request failed', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                    'payload' => $payload,
+                ]);
+                throw new RuntimeException(
+                    'Permintaan ke Midtrans gagal (HTTP '.$response->status().'). Coba lagi atau hubungi admin.'
+                );
+            }
+
             return $response->json() ?? [];
+        } catch (RuntimeException $e) {
+            throw $e; // re-throw our own exceptions unchanged
         } catch (Throwable $e) {
-            Log::warning('Midtrans call failed', ['error' => $e->getMessage()]);
-            return [];
+            Log::error('Midtrans call exception', ['error' => $e->getMessage(), 'payload' => $payload]);
+            throw new RuntimeException('Gagal terhubung ke Midtrans: '.$e->getMessage(), 0, $e);
         }
     }
 }

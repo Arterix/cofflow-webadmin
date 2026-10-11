@@ -67,7 +67,9 @@
                             <p class="text-xs mt-1 text-right" data-variance></p>
                         </td>
                         <td class="px-4 py-3">
-                            <select name="items[{{ $idx }}][variance_reason]" class="w-full rounded-md border border-primary-100 px-2 py-1.5 text-xs">
+                            <select name="items[{{ $idx }}][variance_reason]"
+                                    data-reason
+                                    class="w-full rounded-md border border-primary-100 px-2 py-1.5 text-xs disabled:opacity-30 disabled:cursor-not-allowed">
                                 <option value="">—</option>
                                 @foreach ($reasons as $key => $label)
                                     <option value="{{ $key }}">{{ $label }}</option>
@@ -75,7 +77,9 @@
                             </select>
                         </td>
                         <td class="px-4 py-3">
-                            <input name="items[{{ $idx }}][notes]" placeholder="Optional" class="w-full rounded-md border border-primary-100 px-2 py-1.5 text-xs" />
+                            <input name="items[{{ $idx }}][notes]" data-notes
+                                   placeholder="Optional"
+                                   class="w-full rounded-md border border-primary-100 px-2 py-1.5 text-xs disabled:opacity-30 disabled:cursor-not-allowed" />
                         </td>
                     </tr>
                 @endforeach
@@ -91,20 +95,58 @@
 </form>
 
 <script>
-    // Live variance compute + strip rows with no physical input on submit.
+    // Live variance compute + toggle reason/notes + strip empty rows on submit.
     (function () {
         const rows = document.querySelectorAll('[data-row]');
-        rows.forEach((row) => {
+
+        function updateVarianceState(row) {
             const physical = row.querySelector('[data-physical]');
             const variance = row.querySelector('[data-variance]');
-            physical.addEventListener('input', () => {
-                if (physical.value === '') { variance.textContent = ''; return; }
-                const diff = parseFloat(physical.value) - parseFloat(physical.dataset.system);
-                if (Number.isNaN(diff)) { variance.textContent = ''; return; }
-                const sign = diff > 0 ? '+' : '';
-                variance.textContent = sign + diff.toFixed(3).replace(/\.?0+$/, '');
-                variance.className = 'text-xs mt-1 text-right ' + (diff === 0 ? 'text-gray-400' : (diff < 0 ? 'text-alert-dark' : 'text-accent-dark'));
-            });
+            const reason   = row.querySelector('[data-reason]');
+            const notes    = row.querySelector('[data-notes]');
+
+            if (physical.value === '') {
+                variance.textContent = '';
+                reason.disabled = true;
+                reason.value = '';
+                notes.disabled = true;
+                return;
+            }
+
+            const diff = parseFloat(physical.value) - parseFloat(physical.dataset.system);
+            if (Number.isNaN(diff)) {
+                variance.textContent = '';
+                reason.disabled = true;
+                reason.value = '';
+                notes.disabled = true;
+                return;
+            }
+
+            const sign = diff > 0 ? '+' : '';
+            variance.textContent = sign + diff.toFixed(3).replace(/\.?0+$/, '');
+            variance.className = 'text-xs mt-1 text-right ' +
+                (diff === 0 ? 'text-gray-400' : (diff < 0 ? 'text-alert-dark' : 'text-accent-dark'));
+
+            // Only enable reason/notes when there is an actual difference
+            const hasDiff = Math.abs(diff) > 0.0001;
+            reason.disabled = !hasDiff;
+            notes.disabled  = !hasDiff;
+            if (!hasDiff) {
+                reason.value = '';
+                notes.value  = '';
+            }
+        }
+
+        rows.forEach((row) => {
+            const physical = row.querySelector('[data-physical]');
+            const reason   = row.querySelector('[data-reason]');
+            const notes    = row.querySelector('[data-notes]');
+
+            // Initialise as disabled until a value is entered
+            reason.disabled = true;
+            notes.disabled  = true;
+
+            physical.addEventListener('input', () => updateVarianceState(row));
         });
 
         document.querySelector('form').addEventListener('submit', (e) => {
