@@ -21,7 +21,7 @@ Stack: **Laravel 13**, **PHP 8.4**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/
 - **Opname Stok** — kasir/admin catat stok fisik end-of-shift, admin review & approve untuk menyesuaikan `current_stock`. Variance tracking + reason code.
 - **Diskon** — 3 jenis: per-produk, kode promo, event discount (multi-menu), plus tab **Reward Poin** untuk mengatur voucher yang bisa ditukar member.
 - **Membership & Poin** — member customer mendapat poin dari pesanan aplikasi customer (lihat [Program Poin Member](#program-poin-member)). Halaman *Membership* berisi daftar member, riwayat poin, penyesuaian poin manual, dan pengaturan.
-- **Order Monitor** — daftar order read-only dengan filter status/tipe/tanggal.
+- **Order Monitor** — daftar order read-only dengan filter status/tipe/tanggal. Tampilan terurut per hari secara kronologis (`DATE(created_at) ASC, queue_number ASC`) dengan format nomor antrean 3 digit (`#001`, `#002`, dst.) yang mereset setiap pergantian hari.
 - **Pegawai** — kelola akun kasir/admin, aktif/nonaktif.
 - **Laporan** — laporan rentang tanggal: total order, revenue, per metode bayar, top 10 menu.
 
@@ -152,8 +152,9 @@ Plus 5 customer dummy (`cust1@cofflow.test` … `cust5@cofflow.test`).
 - **6 menu** dengan BOM lengkap
 - **5 bahan baku** dengan stok awal
 - **3 condiment group** (Ukuran, Tingkat Manis, Extra)
-- **~117 order** tersebar 7 hari terakhir (lebih banyak di hari recent)
-  - Status: completed/ready/processing/pending/cancelled
+- **~117 order** tersebar 7 hari terakhir (lebih banyak di hari recent):
+  - **Nomor Antrean Harian Terurut & Reset per Hari**: Nomor antrean (`queue_number`) diurutkan kronologis dari pagi ke malam dan mereset kembali ke `#001` setiap pergantian hari.
+  - **Bebas Duplikasi Antrean Aktif**: Hari-hari lampau dipastikan berstatus final (`completed` / `cancelled`), sedangkan status aktif (`pending`, `processing`, `ready`) hanya berada di hari ini sehingga tidak ada nomor antrean aktif ganda.
   - Mix walk-in/preorder ~65/35
   - Pakai promo code 18% probability
   - Jam dibobotkan ke 12:00 & 18:00 (peak hour realistic)

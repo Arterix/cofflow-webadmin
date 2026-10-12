@@ -121,41 +121,65 @@ class DummyDataSeeder extends Seeder
             return;
         }
 
-        $statusBuckets = [
-            // [status, paymentStatus, weight]
-            ['completed', 'paid', 60],
-            ['ready', 'paid', 10],
-            ['processing', 'paid', 8],
-            ['pending', 'unpaid', 6],
-            ['cancelled', 'unpaid', 6],
-        ];
         $paymentMethods = ['cash', 'qris', 'virtual_account'];
 
         // Distribute orders across past 7 days. More orders on recent days.
-        $perDay = [12, 14, 11, 16, 18, 22, 24]; // 6 days ago ? today
+        $perDay = [12, 14, 11, 16, 18, 22, 24]; // 6 days ago -> today
 
-        Order::withoutEvents(function () use ($menus, $statusBuckets, $paymentMethods, $perDay, $customers, $kasir) {
+        Order::withoutEvents(function () use ($menus, $paymentMethods, $perDay, $customers, $kasir) {
             $orderId = 1;
 
             for ($d = 0; $d < 7; $d++) {
                 $date = Carbon::today()->subDays(6 - $d);
                 $count = $perDay[$d];
-                $dailyQueue = 0;
+
+                // 1. Generate timestamps across business hours (07:00–21:00) with peak around 12:00 and 18:00
+                $hourPool = [7, 8, 9, 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 18, 19, 20];
+                $timestamps = [];
+                for ($i = 0; $i < $count; $i++) {
+                    $hour = $hourPool[array_rand($hourPool)];
+                    $timestamps[] = $date->copy()->setTime($hour, random_int(0, 59), random_int(0, 59));
+                }
+
+                // 2. Sort timestamps strictly ascending so earlier time gets lower queue number
+                usort($timestamps, fn ($a, $b) => $a->timestamp <=> $b->timestamp);
 
                 for ($i = 0; $i < $count; $i++) {
-                    // Spread across business hours 07�21, peak around 12 and 18.
-                    $hourPool = [7, 8, 9, 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 18, 19, 20];
-                    $hour = $hourPool[array_rand($hourPool)];
-                    $createdAt = $date->copy()->setTime($hour, random_int(0, 59), random_int(0, 59));
+                    $createdAt = $timestamps[$i];
+                    $dailyQueue = $i + 1;
 
-                    $status = $this->weightedPick($statusBuckets);
-                    [$statusVal, $paymentStatus] = [$status[0], $status[1]];
+                    // 3. Status distribution:
+                    // - Past days ($d < 6): ALL orders are finished (completed or cancelled). No stale active orders!
+                    // - Today ($d == 6): earlier orders are completed, recent orders are ready/processing/pending.
+                    if ($d < 6) {
+                        $isCancelled = random_int(0, 100) < 8;
+                        $statusVal = $isCancelled ? 'cancelled' : 'completed';
+                        $paymentStatus = $isCancelled ? 'unpaid' : 'paid';
+                    } else {
+                        $posFromLatest = $count - 1 - $i;
+                        if ($posFromLatest <= 1) {
+                            $statusVal = 'pending';
+                            $paymentStatus = 'unpaid';
+                        } elseif ($posFromLatest <= 3) {
+                            $statusVal = 'processing';
+                            $paymentStatus = 'paid';
+                        } elseif ($posFromLatest <= 5) {
+                            $statusVal = 'ready';
+                            $paymentStatus = 'paid';
+                        } elseif ($posFromLatest === 6) {
+                            $statusVal = 'cancelled';
+                            $paymentStatus = 'unpaid';
+                        } else {
+                            $statusVal = 'completed';
+                            $paymentStatus = 'paid';
+                        }
+                    }
 
                     $isWalkin = random_int(0, 100) < 65;
                     $orderType = $isWalkin ? 'walkin' : 'preorder';
                     $paymentMethod = $isWalkin ? 'cash' : $paymentMethods[array_rand($paymentMethods)];
 
-                    // 1�3 items.
+                    // 1–3 items.
                     $itemCount = random_int(1, 3);
                     $pickedMenus = $menus->random(min($itemCount, $menus->count()));
 
@@ -216,7 +240,6 @@ class DummyDataSeeder extends Seeder
 
                     $total = max(0, $subtotal - $promoDiscount);
 
-                    $dailyQueue++;
                     $order = Order::create([
                         'user_id' => $isWalkin ? null : $customers->random()->id,
                         'cashier_id' => $isWalkin ? optional($kasir)->id : null,
@@ -231,7 +254,7 @@ class DummyDataSeeder extends Seeder
                         'subtotal' => $subtotal,
                         'discount_amount' => $discount,
                         'total' => $total,
-                        'midtrans_order_id' => $paymentMethod !== 'cash' ? 'COFFLOW-'.$orderId.'-'.$createdAt->timestamp : null,
+                        'midtrans_order_id' => $paymentMethod !== 'cash' ? 'COFFLOW-'.$date->format('Ymd').'-'.str_pad((string) $dailyQueue, 3, '0', STR_PAD_LEFT).'-'.$createdAt->timestamp : null,
                         'notes' => null,
                         'created_at' => $createdAt,
                         'updated_at' => $createdAt,

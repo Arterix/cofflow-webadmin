@@ -15,7 +15,7 @@ class OrderMonitorController extends Controller
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->query('type'), fn ($q, $t) => $q->where('order_type', $t))
             ->when($request->query('date'), fn ($q, $d) => $q->whereDate('created_at', $d))
-            ->orderByDesc('created_at')
+            ->orderByRaw('DATE(created_at) ASC, queue_number ASC')
             ->paginate(20)
             ->withQueryString();
 

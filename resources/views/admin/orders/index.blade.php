@@ -55,7 +55,7 @@
             <tbody class="divide-y divide-primary-100">
                 @forelse ($orders as $o)
                     <tr>
-                        <td class="px-4 py-3 font-medium text-primary">#{{ $o->id }}</td>
+                        <td class="px-4 py-3 font-medium text-primary" title="ID: #{{ $o->id }}">#{{ str_pad((string) ($o->queue_number ?? $o->id), 3, '0', STR_PAD_LEFT) }}</td>
                         <td class="px-4 py-3">{{ $o->user?->name ?? 'Walk-in' }}</td>
                         <td class="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">{{ $o->order_type }}</td>
                         <td class="px-4 py-3 text-right">Rp {{ number_format((float) $o->total, 0, ',', '.') }}</td>
