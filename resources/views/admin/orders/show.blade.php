@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Order #'.$order->id.' · Konco Space Admin')
-@section('page_title', 'Order #'.$order->id)
+@section('title', 'Order #'.str_pad((string) ($order->queue_number ?? $order->id), 3, '0', STR_PAD_LEFT).' · Konco Space Admin')
+@section('page_title', 'Order #'.str_pad((string) ($order->queue_number ?? $order->id), 3, '0', STR_PAD_LEFT))
 @section('page_sub', 'Detail pesanan')
 
 @section('content')
@@ -61,7 +61,7 @@
             <div class="flex justify-between"><span class="text-gray-500">Pelanggan</span><span>{{ $order->user?->name ?? 'Walk-in' }}</span></div>
             <div class="flex justify-between"><span class="text-gray-500">Kasir</span><span>{{ $order->cashier?->name ?? '-' }}</span></div>
             <div class="flex justify-between"><span class="text-gray-500">Tipe</span><span>{{ $order->order_type }}</span></div>
-            <div class="flex justify-between"><span class="text-gray-500">Antrian</span><span>#{{ $order->queue_number }}</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Antrian</span><span>#{{ str_pad((string) ($order->queue_number ?? $order->id), 3, '0', STR_PAD_LEFT) }}</span></div>
             <div class="flex justify-between"><span class="text-gray-500">Status</span><span>{{ $order->status }}</span></div>
             <div class="flex justify-between"><span class="text-gray-500">Bayar</span><span>{{ $order->payment_method }} · {{ $order->payment_status }}</span></div>
             @if ($order->promo_code)
