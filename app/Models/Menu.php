@@ -11,15 +11,31 @@ class Menu extends Model
 {
     protected $fillable = [
         'menu_category_id', 'name', 'description',
-        'price', 'image_url', 'is_active',
+        'price', 'image_url', 'is_active', 'points_override',
     ];
+
+    protected $appends = ['points_per_item'];
 
     protected function casts(): array
     {
         return [
             'price' => 'decimal:2',
             'is_active' => 'boolean',
+            'points_override' => 'integer',
         ];
+    }
+
+    /**
+     * Member points for one unit: the admin override, else 1 if the normal price
+     * reaches the configured minimum (discounts and condiments don't matter).
+     */
+    public function getPointsPerItemAttribute(): int
+    {
+        if ($this->points_override !== null) {
+            return (int) $this->points_override;
+        }
+
+        return (float) $this->price >= LoyaltySetting::current()->min_item_price ? 1 : 0;
     }
 
     public function category(): BelongsTo

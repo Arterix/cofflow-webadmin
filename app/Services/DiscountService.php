@@ -6,6 +6,7 @@ use App\Models\EventDiscount;
 use App\Models\Menu;
 use App\Models\ProductDiscount;
 use App\Models\PromoCode;
+use App\Models\UserVoucher;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -87,8 +88,14 @@ class DiscountService
     /**
      * @param  array<int, array{menu_id:int, quantity:int, condiment_option_ids?:array<int>}>  $items
      */
-    public function calculateOrderTotal(array $items, ?string $promoCode = null): array
+    public function calculateOrderTotal(array $items, ?string $promoCode = null, ?UserVoucher $voucher = null): array
     {
+        if ($promoCode && $voucher) {
+            throw ValidationException::withMessages([
+                'voucher_id' => ['Pilih salah satu: voucher poin atau kode promo'],
+            ]);
+        }
+
         $today = Carbon::today();
         $subtotal = 0.0;
         $totalItemDiscount = 0.0;
@@ -134,18 +141,38 @@ class DiscountService
             $promoModel = $result['promo'];
         }
 
-        $total = max(0, $subtotal - $promoDiscount);
-        $discountAmount = $totalItemDiscount + $promoDiscount;
+        $voucherDiscount = $voucher ? $this->calcVoucher($voucher, $subtotal) : 0.0;
+
+        $total = max(0, $subtotal - $promoDiscount - $voucherDiscount);
+        $discountAmount = $totalItemDiscount + $promoDiscount + $voucherDiscount;
 
         return [
             'subtotal' => round($subtotal, 2),
             'discount_amount' => round($discountAmount, 2),
             'item_discount' => round($totalItemDiscount, 2),
             'promo_discount' => round($promoDiscount, 2),
+            'voucher_discount' => round($voucherDiscount, 2),
             'total' => round($total, 2),
             'item_breakdown' => $itemBreakdown,
             'promo' => $promoModel,
+            'voucher' => $voucher,
         ];
+    }
+
+    public function calcVoucher(UserVoucher $voucher, float $subtotal): float
+    {
+        if ($subtotal < (float) $voucher->min_order) {
+            throw ValidationException::withMessages([
+                'voucher_id' => ['Voucher butuh minimum order Rp '.number_format((float) $voucher->min_order, 0, ',', '.')],
+            ]);
+        }
+
+        $amount = $this->amountFromRule($voucher->type, (float) $voucher->value, $subtotal);
+        if ($voucher->max_discount !== null) {
+            $amount = min($amount, (float) $voucher->max_discount);
+        }
+
+        return $amount;
     }
 
     private function amountFromRule(string $type, float $value, float $base): float

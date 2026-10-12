@@ -6,10 +6,10 @@
 
 @php
     $cards = [
-        ['label' => 'Total Order Hari Ini', 'value' => $totalOrderToday, 'tone' => 'primary', 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2'],
-        ['label' => 'Revenue Hari Ini', 'value' => 'Rp '.number_format($revenueToday, 0, ',', '.'), 'tone' => 'accent', 'icon' => 'M12 8c-1.66 0-3 .67-3 1.5S10.34 11 12 11s3 .67 3 1.5S13.66 14 12 14m0-6V6m0 8v2'],
-        ['label' => 'Order Aktif', 'value' => $activeOrders, 'tone' => 'primary', 'icon' => 'M13 10V3L4 14h7v7l9-11h-7z'],
-        ['label' => 'Bahan Kritis', 'value' => $criticalIngredients, 'tone' => $criticalIngredients > 0 ? 'alert' : 'accent', 'icon' => 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'],
+        ['label' => 'Total Order Hari Ini', 'value' => $totalOrderToday, 'tone' => 'primary', 'icon' => 'receipt_long'],
+        ['label' => 'Revenue Hari Ini', 'value' => 'Rp '.number_format($revenueToday, 0, ',', '.'), 'tone' => 'accent', 'icon' => 'payments'],
+        ['label' => 'Order Aktif', 'value' => $activeOrders, 'tone' => 'primary', 'icon' => 'flash_on'],
+        ['label' => 'Bahan Kritis', 'value' => $criticalIngredients, 'tone' => $criticalIngredients > 0 ? 'alert' : 'accent', 'icon' => 'warning_amber'],
     ];
 @endphp
 
@@ -38,9 +38,7 @@
                         <p class="mt-1 font-display text-2xl font-semibold text-primary">{{ $c['value'] }}</p>
                     </div>
                     <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl {{ $iconBg }}">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $c['icon'] }}"></path>
-                        </svg>
+                        <x-icon :name="$c['icon']" class="h-5 w-5" />
                     </span>
                 </div>
             </div>
@@ -102,7 +100,7 @@
 
             @if ($topMenus->isEmpty())
                 <div class="text-center py-10 text-sm text-gray-500">
-                    <svg class="mx-auto h-10 w-10 text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6h6v6M3 7h18M5 7v13a1 1 0 001 1h12a1 1 0 001-1V7"/></svg>
+                    <x-icon name="inbox" class="mx-auto h-10 w-10 text-gray-300 mb-2" />
                     Belum ada penjualan
                 </div>
             @else

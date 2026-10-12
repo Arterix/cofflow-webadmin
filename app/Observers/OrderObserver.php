@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Services\FcmService;
+use App\Services\LoyaltyService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -13,6 +14,7 @@ class OrderObserver
     public function __construct(
         protected StockService $stock,
         protected FcmService $fcm,
+        protected LoyaltyService $loyalty,
     ) {}
 
     public function created(Order $order): void
@@ -31,6 +33,15 @@ class OrderObserver
         if ($order->wasChanged('status') && $order->status === 'cancelled') {
             $order->loadMissing('items.condiments.condimentOption.bomItems');
             $this->stock->restoreForOrder($order);
+            $this->loyalty->releaseVoucherForOrder($order);
+        }
+
+        if ($order->wasChanged('status') && $order->status === 'completed') {
+            try {
+                $this->loyalty->awardForOrder($order);
+            } catch (Throwable $e) {
+                Log::error('Awarding loyalty points failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+            }
         }
 
         try {

@@ -12,14 +12,15 @@
     --color-primary-100: #e5d2cd;
     --color-primary-700: #2a1b19;
 
-    /* Deeper cream as page bg so card/border/text contrast pops */
-    --color-secondary: #dcd2b0;
-    --color-secondary-light: #f5f5dc;
-    --color-secondary-dark: #c7bb94;
+    /* Oatmeal/Cream page bg — same as employee AppColors.background */
+    --color-secondary: #f5f5dc;
+    --color-secondary-light: #fafaeb;
+    --color-secondary-dark: #dcd2b0;
 
-    --color-accent: #c8963c;
-    --color-accent-dark: #a67a2e;
-    --color-accent-50: #fdf3dc;
+    /* Matcha Green — same as employee AppColors.accent */
+    --color-accent: #81c784;
+    --color-accent-dark: #2e7d32;
+    --color-accent-50: #e8f5e9;
 
     --color-alert: #e57373;
     --color-alert-dark: #c45a5a;

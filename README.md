@@ -1,10 +1,12 @@
-﻿# Konco Space Admin Dashboard
+# Konco Space Admin Dashboard
 
 Web admin dashboard untuk coffee shop **Konco Space**. Mengelola menu, stok bahan baku, diskon, order, pegawai, opname stok, dan laporan penjualan.
 
 Bagian dari ekosistem Konco Space: backend REST API + admin web (repo ini) + Flutter customer/employee app. Kedua app mobile (`customer_app`, `employee_app`) konsumsi API ini lewat token Sanctum (`Authorization: Bearer`) — tidak ada koneksi DB langsung dari mobile.
 
-Stack: **Laravel 13**, **PHP 8.3+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/SQLite**.
+Stack: **Laravel 13**, **PHP 8.4**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/SQLite**.
+
+> **Urutan menjalankan ekosistem:** jalankan **webadmin (repo ini) dulu** karena database + API ada di sini. Setelah `http://127.0.0.1:8000` hidup, baru jalankan `cofflow-employee` / `cofflow-customer`. Lihat [Quick Start](#quick-start-lokal).
 
 ---
 
@@ -17,7 +19,8 @@ Stack: **Laravel 13**, **PHP 8.3+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL
 - **Manajemen Stok & Audit Trail** — bahan baku, restock, highlight kritis (`current_stock < minimum_stock`). Setiap perubahan tercatat di tabel `stock_adjustments` (`type`: `manual`, `restock`, `order_deduct`, `order_restore`, `opname`) dengan delta dan user yang bertanggung jawab.
 - **Stock Restoration Guard** — pelacakan `stock_restored_at` pada pesanan untuk menjamin stok hanya dikembalikan tepat satu kali saat pesanan dibatalkan.
 - **Opname Stok** — kasir/admin catat stok fisik end-of-shift, admin review & approve untuk menyesuaikan `current_stock`. Variance tracking + reason code.
-- **Diskon** — 3 jenis: per-produk, kode promo, event discount (multi-menu).
+- **Diskon** — 3 jenis: per-produk, kode promo, event discount (multi-menu), plus tab **Reward Poin** untuk mengatur voucher yang bisa ditukar member.
+- **Membership & Poin** — member customer mendapat poin dari pesanan aplikasi customer (lihat [Program Poin Member](#program-poin-member)). Halaman *Membership* berisi daftar member, riwayat poin, penyesuaian poin manual, dan pengaturan.
 - **Order Monitor** — daftar order read-only dengan filter status/tipe/tanggal.
 - **Pegawai** — kelola akun kasir/admin, aktif/nonaktif.
 - **Laporan** — laporan rentang tanggal: total order, revenue, per metode bayar, top 10 menu.
@@ -26,65 +29,118 @@ Stack: **Laravel 13**, **PHP 8.3+**, **Tailwind CSS v4**, **Vite**, **PostgreSQL
 
 ## Design System
 
-Brand tokens didefinisikan di [resources/css/app.css](resources/css/app.css) via Tailwind v4 `@theme`:
+Warna dan icon **mengikuti `cofflow-employee`** (acuan tema ketiga app). Brand tokens didefinisikan di [resources/css/app.css](resources/css/app.css) via Tailwind v4 `@theme`:
 
-| Token | Hex | Pakai untuk |
-|---|---|---|
-| `primary` | `#3E2723` | Espresso brown — header, sidebar, primary CTAs |
-| `secondary` | `#DCD2B0` | Oatmeal cream — page background |
-| `accent` | `#81C784` | Matcha green — sukses, add buttons, today bar |
-| `alert` | `#E57373` | Cinnamon red — error, kritis, delete |
+| Token | Hex | Sama dengan (employee) | Pakai untuk |
+|---|---|---|---|
+| `primary` | `#3E2723` | `AppColors.primary` | Espresso brown — header, sidebar, primary CTAs |
+| `secondary` | `#F5F5DC` | `AppColors.background` | Oatmeal cream — page background |
+| `accent` | `#81C784` | `AppColors.accent` | Matcha green — sukses, add buttons, today bar |
+| `accent-dark` | `#2E7D32` | — | Teks di atas `accent-50` supaya terbaca |
+| `alert` | `#E57373` | `AppColors.alert` | Cinnamon red — error, kritis, delete |
 
 Komponen reusable:
 - **`.btn-action`** + variants (`.btn-add` / `.btn-edit` / `.btn-delete` / `.btn-info`) — konsistensi tombol aksi.
 - **`.status-pill`** + variants (`.is-success` / `.is-danger` / `.is-warning` / `.is-info` / `.is-muted` / `.is-strong`) — badge status seragam di seluruh halaman.
+- **`<x-icon>`** ([resources/views/components/icon.blade.php](resources/views/components/icon.blade.php)) — icon **Material Icons (outlined)**, set yang sama dengan `Icons.*` di Flutter. Tanpa dependency tambahan.
+  ```blade
+  <x-icon name="dashboard" class="h-5 w-5" />
+  <x-icon :name="$item['icon']" class="h-5 w-5 shrink-0" />
+  ```
+  Tambah icon baru: ambil isi `<svg>` dari `https://unpkg.com/@material-design-icons/svg/outlined/<nama>.svg`, lalu tambahkan ke array `$paths` dengan key = nama icon Flutter (mis. `receipt_long`).
 
 Typography: **Poppins** untuk display/heading, **Roboto** untuk body.
 
 ---
 
-## Setup Lokal
+## Quick Start Lokal
 
 ### Prasyarat
 
-- PHP 8.2+
-- Composer 2.x
-- Node.js 18+ + npm
-- SQLite (default, bundled) atau PostgreSQL 15
+| Tool | Versi | Cek |
+|---|---|---|
+| PHP | **8.4** (minimal 8.3; `composer.lock` berisi Symfony 8 yang butuh 8.4) | `php -v` |
+| Ekstensi PHP | `pdo_sqlite`, `sqlite3`, `mbstring`, `openssl`, `fileinfo`, `sodium` | `php -m` |
+| Composer | 2.x | `composer -V` |
+| Node.js + npm | 20+ | `node -v` |
+| Database | SQLite (default, tanpa install) atau PostgreSQL 15 | — |
 
-### Langkah
+### Setup pertama kali (sekali saja)
 
-```bash
-# 1. Clone & install dependencies
-git clone <repo-url> Konco Space-admin
-cd Konco Space-admin
+Jalankan dari folder `cofflow-webadmin`:
+
+```powershell
+# 1. Install dependency PHP + JS
 composer install
 npm install
 
-# 2. Environment
-cp .env.example .env
+# 2. Buat file environment + app key
+copy .env.example .env            # Linux/Mac: cp .env.example .env
 php artisan key:generate
 
-# 3. Database (SQLite default — file otomatis dibuat)
-touch database/database.sqlite        # Linux/Mac
-# atau Windows PowerShell: New-Item database/database.sqlite -ItemType File
-
+# 3. Buat database SQLite + isi data dummy
+New-Item database\database.sqlite -ItemType File   # Linux/Mac: touch database/database.sqlite
 php artisan migrate --seed
 
-# 4. Build assets + jalankan server
-npm run dev          # terminal 1 — Vite dev server
-php artisan serve    # terminal 2 — Laravel app di http://localhost:8000
+# 4. Link folder upload gambar + build CSS/JS
+php artisan storage:link
+npm run build
 ```
+
+### Menjalankan (setiap kali)
+
+```powershell
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+Buka **http://127.0.0.1:8000/login**. Biarkan terminal ini tetap terbuka — employee/customer app memanggil API di `http://127.0.0.1:8000/api`.
+
+Opsional, saat mengedit Blade/CSS: jalankan `npm run dev` di terminal kedua untuk hot reload. Ini **bukan** pengganti `php artisan serve`.
+
+Cek API hidup:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/auth/login -Method Post -ContentType 'application/json' `
+  -Headers @{Accept='application/json'} -Body '{"email":"kasir@cofflow.test","password":"password"}'
+```
+
+Harus mengembalikan `success: True` + `token`.
+
+### Lanjut: jalankan employee app
+
+Setelah server di atas hidup, buka terminal baru:
+
+```powershell
+cd ..\cofflow-employee
+flutter run -d chrome --web-port 8080 --dart-define=API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+Detail lain (emulator Android, device fisik) ada di README `cofflow-employee`.
+
+### Troubleshooting
+
+| Gejala | Penyebab | Solusi |
+|---|---|---|
+| `Composer detected issues in your platform: ... PHP version ">= 8.4.0"` | PHP lokal lebih lama (mis. XAMPP 8.2) | Upgrade ke PHP 8.4. Darurat untuk dev saja: `composer install --ignore-platform-req=php --ignore-platform-req=ext-sodium` |
+| `'php' is not recognized` | PHP tidak ada di PATH | Tambah folder PHP ke PATH, mis. `$env:PATH = "C:\xampp\php;$env:PATH"` |
+| `Class "...ServiceProvider" not found` | `vendor/` tidak sinkron dengan `composer.lock` | `composer install`, lalu `php artisan package:discover` |
+| `Vite manifest not found` | Asset belum di-build | `npm run build` |
+| Halaman tampil tanpa style setelah ganti CSS | Cache view/asset lama | `npm run build` lalu `php artisan view:clear` |
+| Gambar menu tidak muncul | Belum ada symlink storage | `php artisan storage:link` |
+| Employee app: `Connection refused` / CORS | Server webadmin belum jalan atau beda port | Jalankan `php artisan serve --host=127.0.0.1 --port=8000` dulu |
+| Server mati / error saat simpan, ubah, hapus (PATCH/PUT/DELETE) | PHP 8.2 (mis. XAMPP) crash di request ini | Pakai PHP 8.4, mis. `& "$env:USERPROFILE\php84\php.exe" artisan serve --host=127.0.0.1 --port=8000` |
+| Jam pesanan selisih 7 jam | Timezone belum diset | Isi `APP_TIMEZONE=Asia/Jakarta` di `.env`, lalu `php artisan config:clear` |
+| `no such column: min_item_price` / tabel poin tidak ada | Migration baru belum dijalankan | `php artisan migrate` lalu `php artisan db:seed --class=LoyaltySeeder` |
 
 ### Login Seeded
 
 | Email | Password | Role |
 |---|---|---|
-| `admin@koncospace.test` | `password` | admin |
-| `kasir@koncospace.test` | `password` | kasir |
-| `customer@koncospace.test` | `password` | customer |
+| `admin@cofflow.test` | `password` | admin |
+| `kasir@cofflow.test` | `password` | kasir |
+| `customer@cofflow.test` | `password` | customer |
 
-Plus 5 customer dummy (`cust1@koncospace.test` … `cust5@koncospace.test`).
+Plus 5 customer dummy (`cust1@cofflow.test` … `cust5@cofflow.test`).
 
 ---
 
@@ -102,6 +158,7 @@ Plus 5 customer dummy (`cust1@koncospace.test` … `cust5@koncospace.test`).
   - Pakai promo code 18% probability
   - Jam dibobotkan ke 12:00 & 18:00 (peak hour realistic)
 - **4 diskon** (1 produk untuk Latte, 2 promo code, 1 event Coffee Fest)
+- **Pengaturan poin + 3 reward** (`LoyaltySeeder`): Potongan Rp 10.000 (10 poin), Diskon 20% (15 poin), Diskon 50% khusus Gold (40 poin). Semua customer mulai dari 0 poin.
 - **2 opname stok** (1 approved kemarin, 1 pending hari ini)
 
 Reset & re-seed:
@@ -169,20 +226,20 @@ npm run dev                           # Vite dev (hot reload)
 ### Supabase (Storage + Postgres opsional)
 
 1. Buat project di [supabase.com](https://supabase.com) → Settings → API → copy `Project URL` + `secret key` (atau `service_role` key di project lama).
-2. Storage → **New bucket**: `Konco Space-images`, public ON.
+2. Storage → **New bucket**: `koncospace-images`, public ON.
 3. SQL Editor → jalankan policy:
    ```sql
    CREATE POLICY "public_read" ON storage.objects
-   FOR SELECT USING (bucket_id = 'Konco Space-images');
+   FOR SELECT USING (bucket_id = 'koncospace-images');
 
    CREATE POLICY "auth_upload" ON storage.objects
-   FOR INSERT WITH CHECK (bucket_id = 'Konco Space-images');
+   FOR INSERT WITH CHECK (bucket_id = 'koncospace-images');
    ```
 4. Isi `.env`:
    ```env
    SUPABASE_URL=https://xxxxxxx.supabase.co
    SUPABASE_KEY=sb_secret_...
-   SUPABASE_BUCKET=Konco Space-images
+   SUPABASE_BUCKET=koncospace-images
    ```
 5. **Opsional** — switch DB dari SQLite ke Supabase Postgres (Settings → Database → Connection string):
    ```env
@@ -210,7 +267,7 @@ npm run dev                           # Vite dev (hot reload)
    ```
    ```env
    FIREBASE_CREDENTIALS=storage/app/firebase-credentials.json
-   FIREBASE_PROJECT_ID=Konco Space-backend
+   FIREBASE_PROJECT_ID=koncospace-backend
    ```
 6. `FcmService::dispatch` ([app/Services/FcmService.php](app/Services/FcmService.php)) sudah ter-wire ke `kreait/laravel-firebase`. Notifikasi otomatis persist ke DB + kirim FCM bila `user.fcm_token` terisi.
 
@@ -273,7 +330,7 @@ Vite (`npm run dev`) opsional — hanya perlu kalau lagi edit Blade/CSS dengan h
 
 #### Named tunnel (URL stabil — butuh domain sendiri)
 
-Quick tunnel (`--url`) ganti hostname tiap restart. Untuk URL tetap (mis. `api.Konco Space.my.id`) pakai named tunnel. Butuh akun Cloudflare + domain yang sudah di-manage Cloudflare.
+Quick tunnel (`--url`) ganti hostname tiap restart. Untuk URL tetap (mis. `api.koncospace.my.id`) pakai named tunnel. Butuh akun Cloudflare + domain yang sudah di-manage Cloudflare.
 
 **JANGAN bikin A record manual dengan isi IPv4.** Tunnel tidak punya IP tetap. DNS record yang benar = CNAME ke `<tunnel-id>.cfargotunnel.com`, dan `cloudflared` yang bikin otomatis (langkah 4 di bawah).
 
@@ -286,31 +343,31 @@ Quick tunnel (`--url`) ganti hostname tiap restart. Untuk URL tetap (mis. `api.K
 
 3. Buat tunnel — catat tunnel ID + path file credentials `.json` yang dicetak:
    ```powershell
-   cloudflared tunnel create Konco Space
+   cloudflared tunnel create koncospace
    ```
 
 4. Bikin DNS record otomatis (ini pengganti dialog "Add record" manual):
    ```powershell
-   cloudflared tunnel route dns Konco Space api.Konco Space.my.id
+   cloudflared tunnel route dns koncospace api.koncospace.my.id
    ```
    CNAME `api` muncul sendiri di DNS Records.
 
 5. Buat `C:\Users\<user>\.cloudflared\config.yml`:
    ```yaml
-   tunnel: Konco Space
+   tunnel: koncospace
    credentials-file: C:\Users\<user>\.cloudflared\<TUNNEL-ID>.json
    ingress:
-     - hostname: api.Konco Space.my.id
+     - hostname: api.koncospace.my.id
        service: http://localhost:8000
      - service: http_status:404
    ```
 
 6. Pastikan Laravel jalan (`php artisan serve`), lalu jalankan tunnel:
    ```powershell
-   cloudflared tunnel run Konco Space
+   cloudflared tunnel run koncospace
    ```
 
-7. Update `.env` (lihat langkah 2 di atas) pakai `api.Konco Space.my.id`, lalu `php artisan config:clear`.
+7. Update `.env` (lihat langkah 2 di atas) pakai `api.koncospace.my.id`, lalu `php artisan config:clear`.
 
 #### Catatan
 
@@ -338,6 +395,23 @@ Jangan paste private key / secret di chat, log, atau commit message. Rotate kala
 
 ---
 
+## Program Poin Member
+
+Aturan (bisa diubah di **Membership → Pengaturan**):
+
+- Hanya pesanan **preorder dari aplikasi customer** yang dapat poin. Walk-in di kasir tidak.
+- **1 poin per produk** yang harga menunya ≥ **Rp 10.000** (`min_item_price`). Produk di bawah itu 0 poin.
+- Admin bisa isi **Poin member per item** di form menu untuk mengganti nilai otomatis.
+- Opsi tambahan (condiment), diskon produk/event, kode promo, dan voucher poin **tidak** mengubah jumlah poin.
+- Poin masuk saat pesanan berstatus **completed** (sekali saja, dicatat di `points_awarded_at`) dan customer dapat notifikasi.
+- **Tier** dihitung dari total poin yang pernah didapat (`lifetime_points`): Bronze 0, Silver 50, Gold 150. Tier hanya membatasi reward yang bisa ditukar, tidak mengalikan poin. Menukar poin tidak menurunkan tier.
+- Poin ditukar menjadi **voucher** (tab *Reward Poin* di halaman Diskon). Satu pesanan maksimal satu voucher dan tidak bisa digabung dengan kode promo. Voucher kembali jika pesanan dibatalkan.
+- Penyesuaian manual admin hanya mengubah saldo, tidak mengubah tier.
+
+Tabel: `loyalty_settings`, `point_rewards`, `point_transactions`, `user_vouchers`, plus kolom poin di `users` dan `orders`. Test: `php artisan test --filter=LoyaltyPointsTest`.
+
+---
+
 ## Endpoint API (ringkas)
 
 Base URL: `https://{host}/api`. Format response konsisten:
@@ -349,7 +423,9 @@ Base URL: `https://{host}/api`. Format response konsisten:
 Grup utama:
 - `POST /auth/login`, `POST /auth/register`, `GET /auth/me`
 - `GET /menus`, `GET /categories` (public)
-- `POST /orders`, `GET /orders` (customer)
+- `POST /orders`, `GET /orders` (customer); `POST /orders/quote` (hitung total + estimasi poin sebelum pesan)
+- `GET /loyalty`, `GET /loyalty/history`, `GET /loyalty/rewards`, `POST /loyalty/rewards/{id}/redeem`, `GET /loyalty/vouchers` (customer)
+- `PUT /auth/change-password`
 - `GET /staff/orders`, `PATCH /staff/orders/{id}/status` (kasir/admin)
 - `GET /admin/*` — semua endpoint admin (menu, stok, diskon, analytics, staff)
 - `POST /webhook/midtrans` (public, signature-verified)

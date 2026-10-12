@@ -76,7 +76,7 @@
                 @empty
                     <tr>
                         <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500">
-                            <svg class="mx-auto h-10 w-10 text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-6 8l2 2 4-4"/></svg>
+                            <x-icon name="fact_check" class="mx-auto h-10 w-10 text-gray-300 mb-2" />
                             Belum ada opname. <a href="{{ route('admin.opnames.create') }}" class="text-accent-dark font-medium">Buat opname pertama</a>.
                         </td>
                     </tr>

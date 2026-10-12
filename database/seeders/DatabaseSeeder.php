@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         // ----- Users -----
         User::firstOrCreate(
-            ['email' => 'admin@koncospace.test'],
+            ['email' => 'admin@cofflow.test'],
             [
                 'name' => 'Owner Konco Space',
                 'phone' => '081200000001',
@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
         );
 
         User::firstOrCreate(
-            ['email' => 'kasir@koncospace.test'],
+            ['email' => 'kasir@cofflow.test'],
             [
                 'name' => 'Kasir Pagi',
                 'phone' => '081200000002',
@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
         );
 
         User::firstOrCreate(
-            ['email' => 'customer@koncospace.test'],
+            ['email' => 'customer@cofflow.test'],
             [
                 'name' => 'Pelanggan Setia',
                 'phone' => '081200000003',
@@ -138,8 +138,9 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        $this->call(LoyaltySeeder::class);
         $this->call(DummyDataSeeder::class);
 
-        $this->command?->info('Konco Space seed ready. Login: admin@koncospace.test / password (role admin)');
+        $this->command?->info('Konco Space seed ready. Login: admin@cofflow.test / password (role admin)');
     }
 }

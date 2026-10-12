@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\DiscountController;
 use App\Http\Controllers\Api\Admin\IngredientController;
 use App\Http\Controllers\Api\Admin\StaffManagementController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\LoyaltyController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
@@ -37,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::patch('/auth/fcm-token', [AuthController::class, 'updateFcmToken']);
 
+    Route::post('/orders/quote', [OrderController::class, 'quote']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
@@ -47,6 +49,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+
+    Route::get('/loyalty', [LoyaltyController::class, 'summary']);
+    Route::get('/loyalty/history', [LoyaltyController::class, 'history']);
+    Route::get('/loyalty/rewards', [LoyaltyController::class, 'rewards']);
+    Route::post('/loyalty/rewards/{id}/redeem', [LoyaltyController::class, 'redeem'])->middleware('throttle:20,1');
+    Route::get('/loyalty/vouchers', [LoyaltyController::class, 'vouchers']);
 });
 
 // 3) Kasir + Admin

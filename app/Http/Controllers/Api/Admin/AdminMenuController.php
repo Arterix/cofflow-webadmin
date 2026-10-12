@@ -47,6 +47,7 @@ class AdminMenuController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'menu_category_id' => ['required', 'integer', 'exists:menu_categories,id'],
             'is_active' => ['nullable', 'boolean'],
+            'points_override' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'image' => ['nullable', 'image', 'max:4096'],
         ]);
 
@@ -61,6 +62,7 @@ class AdminMenuController extends Controller
             'price' => $data['price'],
             'menu_category_id' => $data['menu_category_id'],
             'is_active' => $data['is_active'] ?? true,
+            'points_override' => $data['points_override'] ?? null,
             'image_url' => $imageUrl,
         ]);
 
@@ -77,6 +79,7 @@ class AdminMenuController extends Controller
             'price' => ['sometimes', 'numeric', 'min:0'],
             'menu_category_id' => ['sometimes', 'integer', 'exists:menu_categories,id'],
             'is_active' => ['sometimes', 'boolean'],
+            'points_override' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:100000'],
             'image' => ['nullable', 'image', 'max:4096'],
         ]);
 

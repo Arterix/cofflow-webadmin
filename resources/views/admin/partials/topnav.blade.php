@@ -4,7 +4,7 @@
             <button type="button" onclick="window.toggleSidebar && window.toggleSidebar()"
                     class="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-primary-100 text-primary hover:bg-secondary"
                     aria-label="Buka menu">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <x-icon name="menu" class="h-5 w-5" />
             </button>
             <div class="min-w-0">
                 <h1 class="font-display font-semibold text-primary text-base sm:text-lg truncate">@yield('page_title', 'Dashboard')</h1>

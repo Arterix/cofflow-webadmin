@@ -8,10 +8,9 @@
         <div class="flex justify-center mb-3">
             <img src="{{ asset('images/logo-konco-space.webp') }}"
                  alt="Konco Space"
-                 class="h-14 w-auto object-contain"
+                 class="h-24 w-auto object-contain"
                  onerror="this.onerror=null; this.src='{{ asset('images/logo-konco-space.png') }}';" />
         </div>
-        <h1 class="mt-1 font-display font-semibold text-2xl text-primary">Konco Space Admin</h1>
         <p class="text-sm text-gray-500">Masuk untuk mengelola coffee shop kamu</p>
     </div>
 
@@ -42,8 +41,8 @@
                             onclick="(function(b){var i=document.getElementById('login-password');var on=i.type==='password';i.type=on?'text':'password';b.setAttribute('aria-pressed',on);b.querySelector('.eye-on').classList.toggle('hidden',!on);b.querySelector('.eye-off').classList.toggle('hidden',on);})(this)"
                             aria-label="Tampilkan password" aria-pressed="false"
                             class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-r-lg">
-                        <svg class="eye-on h-5 w-5 hidden" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.9 5.1A10.5 10.5 0 0112 5c5 0 9 4 10 7-.5 1.4-1.6 3-3.2 4.4M6.2 6.2C4 7.7 2.5 9.8 2 12c1 3 5 7 10 7 1.5 0 2.9-.3 4.2-.9"/></svg>
-                        <svg class="eye-off h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <x-icon name="visibility_off" class="eye-on h-5 w-5 hidden" />
+                        <x-icon name="visibility" class="eye-off h-5 w-5" />
                     </button>
                 </div>
             </div>
@@ -61,7 +60,7 @@
 
         @if (app()->environment('local'))
             <p class="mt-5 text-xs text-gray-500 text-center">
-                Akun seed: <span class="font-mono">admin@koncospace.test</span> / <span class="font-mono">password</span>
+                Akun seed: <span class="font-mono">admin@cofflow.test</span> / <span class="font-mono">password</span>
             </p>
         @endif
     </div>

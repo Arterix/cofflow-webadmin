@@ -135,9 +135,10 @@ class MenuController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
+            'points_override' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'menu_category_id' => ['required', 'integer', 'exists:menu_categories,id'],
             'image' => ['nullable', 'image', 'max:4096'],
-        ]);
+        ]) + ['points_override' => null];
     }
 
     private function uploadImage(Request $request): ?string

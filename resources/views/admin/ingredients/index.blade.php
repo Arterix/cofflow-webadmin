@@ -100,7 +100,7 @@
                     @empty
                         <tr>
                             <td colspan="5" class="px-4 py-12 text-center text-sm text-gray-500">
-                                <svg class="mx-auto h-10 w-10 text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9-4 9 4-9 4-9-4zm0 6l9 4 9-4M3 17l9 4 9-4"/></svg>
+                                <x-icon name="inventory_2" class="mx-auto h-10 w-10 text-gray-300 mb-2" />
                                 Belum ada bahan baku. Tambah lewat form di samping.
                             </td>
                         </tr>

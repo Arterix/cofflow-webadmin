@@ -67,6 +67,14 @@
             @if ($order->promo_code)
                 <div class="flex justify-between"><span class="text-gray-500">Kode promo</span><span class="font-mono">{{ $order->promo_code }}</span></div>
             @endif
+            @if ($order->user_voucher_id)
+                <div class="flex justify-between"><span class="text-gray-500">Voucher poin</span><span>{{ $order->voucher?->name ?? '#'.$order->user_voucher_id }} (−Rp {{ number_format((float) $order->voucher_discount, 0, ',', '.') }})</span></div>
+            @endif
+            @if ($order->points_awarded_at && $order->points_earned > 0)
+                <div class="flex justify-between"><span class="text-gray-500">Poin didapat</span><span class="font-semibold">+{{ $order->points_earned }} poin</span></div>
+            @elseif ((int) $order->points_base > 0 && ! $order->points_awarded_at && $order->status !== 'cancelled')
+                <div class="flex justify-between"><span class="text-gray-500">Poin</span><span class="text-gray-500">+{{ (int) $order->points_base }} poin saat selesai</span></div>
+            @endif
             @if ($order->qr_code_url)
                 <div class="pt-2"><a href="{{ $order->qr_code_url }}" target="_blank" class="text-accent-dark text-xs">Lihat QR Code →</a></div>
             @endif

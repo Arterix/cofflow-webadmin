@@ -31,6 +31,14 @@
                 <input name="price" type="number" step="100" min="0" value="{{ old('price', $menu->price) }}" required class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm" />
             </div>
             <div>
+                @php $minPrice = \App\Models\LoyaltySetting::current()->min_item_price; @endphp
+                <label class="block text-sm font-medium text-primary mb-1">Poin member per item (opsional)</label>
+                <input name="points_override" type="number" min="0" step="1" value="{{ old('points_override', $menu->points_override) }}"
+                       placeholder="Otomatis: 1 poin jika harga ≥ Rp {{ number_format($minPrice, 0, ',', '.') }}{{ $menu->exists ? ' ('.((float) $menu->price >= $minPrice ? 1 : 0).' poin)' : '' }}"
+                       class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm" />
+                <p class="text-xs text-gray-500 mt-1">Kosongkan untuk perhitungan otomatis. Isi untuk memberi poin tetap per item.</p>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-primary mb-1">Foto menu (opsional)</label>
                 <input name="image" type="file" accept="image/*" class="w-full text-sm" />
                 @if ($isEdit && $menu->image_url)

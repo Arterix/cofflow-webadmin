@@ -73,7 +73,7 @@
                 @empty
                     <tr>
                         <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-500">
-                            <svg class="mx-auto h-10 w-10 text-gray-300 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            <x-icon name="receipt_long" class="mx-auto h-10 w-10 text-gray-300 mb-2" />
                             Tidak ada order untuk filter ini
                         </td>
                     </tr>

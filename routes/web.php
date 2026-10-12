@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\Admin\CondimentController;
 use App\Http\Controllers\Web\Admin\DashboardController;
 use App\Http\Controllers\Web\Admin\DiscountController;
 use App\Http\Controllers\Web\Admin\IngredientController;
+use App\Http\Controllers\Web\Admin\MembershipController;
 use App\Http\Controllers\Web\Admin\MenuController;
 use App\Http\Controllers\Web\Admin\OrderMonitorController;
 use App\Http\Controllers\Web\Admin\ReportController;
@@ -68,6 +69,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/discounts/promo/{promo}', [DiscountController::class, 'destroyPromo'])->name('discounts.promo.destroy');
     Route::post('/discounts/event', [DiscountController::class, 'storeEvent'])->name('discounts.event.store');
     Route::delete('/discounts/event/{event}', [DiscountController::class, 'destroyEvent'])->name('discounts.event.destroy');
+    Route::post('/discounts/reward', [DiscountController::class, 'storeReward'])->name('discounts.reward.store');
+    Route::put('/discounts/reward/{reward}', [DiscountController::class, 'updateReward'])->name('discounts.reward.update');
+    Route::patch('/discounts/reward/{reward}/toggle', [DiscountController::class, 'toggleReward'])->name('discounts.reward.toggle');
+    Route::delete('/discounts/reward/{reward}', [DiscountController::class, 'destroyReward'])->name('discounts.reward.destroy');
+
+    // Membership / loyalty points
+    Route::get('/membership', [MembershipController::class, 'index'])->name('membership.index');
+    Route::put('/membership/settings', [MembershipController::class, 'updateSettings'])->name('membership.settings.update');
+    Route::post('/membership/members/{user}/adjust', [MembershipController::class, 'adjust'])->name('membership.adjust');
 
     // Orders (read-only)
     Route::get('/orders', [OrderMonitorController::class, 'index'])->name('orders.index');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EventDiscount;
 use App\Models\Menu;
+use App\Models\PointReward;
 use App\Models\ProductDiscount;
 use App\Models\PromoCode;
 use Illuminate\Http\RedirectResponse;
@@ -31,8 +32,61 @@ class DiscountController extends Controller
         $products = ProductDiscount::with('menu')->orderByDesc('id')->get();
         $promos = PromoCode::orderByDesc('id')->get();
         $events = EventDiscount::with('menus')->orderByDesc('id')->get();
+        $rewards = PointReward::orderBy('points_cost')->get();
 
-        return view('admin.discounts.index', compact('tab', 'menus', 'products', 'promos', 'events'));
+        return view('admin.discounts.index', compact('tab', 'menus', 'products', 'promos', 'events', 'rewards'));
+    }
+
+    public function storeReward(Request $request): RedirectResponse
+    {
+        PointReward::create($this->validateReward($request) + ['is_active' => true]);
+
+        return redirect()->route('admin.discounts.index', ['tab' => 'reward'])->with('status', 'Reward poin dibuat');
+    }
+
+    public function updateReward(Request $request, PointReward $reward): RedirectResponse
+    {
+        $reward->update($this->validateReward($request));
+
+        return redirect()->route('admin.discounts.index', ['tab' => 'reward'])->with('status', 'Reward poin diperbarui');
+    }
+
+    public function toggleReward(PointReward $reward): RedirectResponse
+    {
+        $reward->update(['is_active' => ! $reward->is_active]);
+
+        return back()->with('status', $reward->is_active ? 'Reward diaktifkan' : 'Reward dinonaktifkan');
+    }
+
+    public function destroyReward(PointReward $reward): RedirectResponse
+    {
+        // Already-redeemed vouchers keep their own copy of the terms, so deleting is safe.
+        $reward->delete();
+
+        return back()->with('status', 'Reward poin dihapus');
+    }
+
+    private function validateReward(Request $request): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'type' => ['required', 'in:percentage,nominal'],
+            'value' => ['required', 'numeric', 'min:1'],
+            'max_discount' => ['nullable', 'numeric', 'min:0'],
+            'min_order' => ['nullable', 'numeric', 'min:0'],
+            'points_cost' => ['required', 'integer', 'min:1'],
+            'min_tier' => ['required', 'in:'.implode(',', PointReward::TIERS)],
+            'quota' => ['nullable', 'integer', 'min:1'],
+        ]);
+        $this->validateDiscountValue($data['type'], (float) $data['value']);
+
+        $data['min_order'] = $data['min_order'] ?? 0;
+        if ($data['type'] === 'nominal') {
+            $data['max_discount'] = null;
+        }
+
+        return $data;
     }
 
     public function storeProduct(Request $request): RedirectResponse

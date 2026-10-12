@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\OrderItemCondiment;
 use App\Services\DiscountService;
 use App\Services\FcmService;
+use App\Services\LoyaltyService;
 use App\Services\MidtransService;
 use App\Services\QueueService;
 use App\Services\StockService;
@@ -29,6 +30,7 @@ class OrderController extends Controller
         protected QueueService $queueService,
         protected MidtransService $midtransService,
         protected FcmService $fcmService,
+        protected LoyaltyService $loyaltyService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -62,6 +64,53 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * Price a cart without creating an order (totals, discounts, estimated points).
+     */
+    public function quote(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'promo_code' => ['nullable', 'string', 'max:50'],
+            'voucher_id' => ['nullable', 'integer'],
+            ...$this->itemRules(),
+        ]);
+
+        $user = $request->user();
+        $this->validateItemCondiments($data['items']);
+
+        $voucher = ! empty($data['voucher_id'])
+            ? $this->loyaltyService->findUsableVoucher((int) $data['voucher_id'], $user)
+            : null;
+
+        $calc = $this->discountService->calculateOrderTotal($data['items'], $data['promo_code'] ?? null, $voucher);
+
+        $estimatedPoints = $user->isCustomer()
+            ? $this->loyaltyService->pointsFor($calc['item_breakdown'])
+            : 0;
+
+        return $this->success([
+            'subtotal' => $calc['subtotal'],
+            'item_discount' => $calc['item_discount'],
+            'promo_discount' => $calc['promo_discount'],
+            'voucher_discount' => $calc['voucher_discount'],
+            'discount_amount' => $calc['discount_amount'],
+            'total' => $calc['total'],
+            'estimated_points' => $estimatedPoints,
+        ]);
+    }
+
+    private function itemRules(): array
+    {
+        return [
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.menu_id' => ['required', 'integer', 'exists:menus,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.condiment_option_ids' => ['nullable', 'array'],
+            'items.*.condiment_option_ids.*' => ['integer', 'exists:condiment_options,id'],
+            'items.*.notes' => ['nullable', 'string'],
+        ];
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -70,13 +119,9 @@ class OrderController extends Controller
             'payment_channel' => ['nullable', 'in:bca,bni,bri,mandiri'],
             'pickup_time' => ['nullable', 'date'],
             'promo_code' => ['nullable', 'string', 'max:50'],
+            'voucher_id' => ['nullable', 'integer'],
             'notes' => ['nullable', 'string'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.menu_id' => ['required', 'integer', 'exists:menus,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.condiment_option_ids' => ['nullable', 'array'],
-            'items.*.condiment_option_ids.*' => ['integer', 'exists:condiment_options,id'],
-            'items.*.notes' => ['nullable', 'string'],
+            ...$this->itemRules(),
         ]);
 
         if ($data['payment_method'] === 'virtual_account' && empty($data['payment_channel'])) {
@@ -91,11 +136,24 @@ class OrderController extends Controller
         // 1. Validate condiment options (options belong to menu groups, max 1 for single_select)
         $this->validateItemCondiments($data['items']);
 
+        $user = $request->user();
+        if (! empty($data['voucher_id']) && $data['order_type'] !== 'preorder') {
+            return $this->error('Voucher poin hanya untuk pesanan dari aplikasi', 422);
+        }
+        $voucher = ! empty($data['voucher_id'])
+            ? $this->loyaltyService->findUsableVoucher((int) $data['voucher_id'], $user)
+            : null;
+
         // 2. Calculate total (outside transaction — read-only, no locking needed)
         $calc = $this->discountService->calculateOrderTotal(
             $data['items'],
-            $data['promo_code'] ?? null
+            $data['promo_code'] ?? null,
+            $voucher
         );
+
+        $pointsBase = $data['order_type'] === 'preorder' && $user->isCustomer()
+            ? $this->loyaltyService->pointsFor($calc['item_breakdown'])
+            : 0;
 
         // 3. Create order + deduct stock in a single atomic transaction.
         //    validateAndDeductForOrder() locks ingredients with SELECT FOR UPDATE,
@@ -103,7 +161,12 @@ class OrderController extends Controller
         //    transaction. If stock is insufficient the transaction rolls back and
         //    a ValidationException bubbles up to the client.
         $criticals = [];
-        $order = DB::transaction(function () use ($request, $data, $calc, &$criticals) {
+        $order = DB::transaction(function () use ($request, $data, $calc, $pointsBase, $voucher, &$criticals) {
+            // Re-check under lock so the same voucher can't be spent by two parallel checkouts
+            if ($voucher) {
+                $voucher = $this->loyaltyService->lockVoucherForOrder($voucher->id, $request->user());
+            }
+
             $order = Order::create([
                 'user_id' => $request->user()->id,
                 'cashier_id' => $request->user()->isKasir() || $request->user()->isAdmin()
@@ -120,8 +183,15 @@ class OrderController extends Controller
                 'subtotal' => $calc['subtotal'],
                 'discount_amount' => $calc['discount_amount'],
                 'total' => $calc['total'],
+                'user_voucher_id' => $voucher?->id,
+                'voucher_discount' => $calc['voucher_discount'],
+                'points_base' => $pointsBase,
                 'notes' => $data['notes'] ?? null,
             ]);
+
+            if ($voucher) {
+                $this->loyaltyService->markVoucherUsed($voucher, $order);
+            }
 
             foreach ($data['items'] as $idx => $item) {
                 $breakdown = $calc['item_breakdown'][$idx];

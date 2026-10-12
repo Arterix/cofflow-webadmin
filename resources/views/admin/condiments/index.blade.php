@@ -30,10 +30,7 @@
                              data-option-id="{{ $opt->id }}">
                             <div class="flex items-center gap-3 min-w-0">
                                 <span class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-primary shrink-0" title="Tarik untuk urut ulang" aria-label="Drag handle">
-                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <circle cx="6" cy="4" r="1.4"/><circle cx="6" cy="10" r="1.4"/><circle cx="6" cy="16" r="1.4"/>
-                                        <circle cx="14" cy="4" r="1.4"/><circle cx="14" cy="10" r="1.4"/><circle cx="14" cy="16" r="1.4"/>
-                                    </svg>
+                                    <x-icon name="drag_indicator" class="h-4 w-4" />
                                 </span>
                                 <div class="min-w-0">
                                     <span class="font-medium text-primary">{{ $opt->name }}</span>

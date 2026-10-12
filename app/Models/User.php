@@ -19,13 +19,41 @@ class User extends Authenticatable
 
     protected $hidden = ['password', 'remember_token'];
 
+    protected $appends = ['tier'];
+
+    protected $attributes = [
+        'points_balance' => 0,
+        'lifetime_points' => 0,
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'points_balance' => 'integer',
+            'lifetime_points' => 'integer',
         ];
+    }
+
+    public function getTierAttribute(): ?string
+    {
+        if (! $this->isCustomer()) {
+            return null;
+        }
+
+        return LoyaltySetting::current()->tierFor((int) $this->lifetime_points);
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(PointTransaction::class);
+    }
+
+    public function vouchers(): HasMany
+    {
+        return $this->hasMany(UserVoucher::class);
     }
 
     public function orders(): HasMany

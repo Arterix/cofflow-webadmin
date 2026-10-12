@@ -15,6 +15,8 @@ class Order extends Model
         'subtotal', 'discount_amount', 'total',
         'midtrans_order_id', 'qr_code_url', 'va_number',
         'payment_expired_at', 'stock_restored_at', 'notes',
+        'user_voucher_id', 'voucher_discount', 'points_base',
+        'points_earned', 'points_awarded_at',
     ];
 
     protected function casts(): array
@@ -23,10 +25,19 @@ class Order extends Model
             'subtotal' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total' => 'decimal:2',
+            'voucher_discount' => 'decimal:2',
+            'points_base' => 'integer',
+            'points_earned' => 'integer',
             'pickup_time' => 'datetime',
             'payment_expired_at' => 'datetime',
             'stock_restored_at' => 'datetime',
+            'points_awarded_at' => 'datetime',
         ];
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(UserVoucher::class, 'user_voucher_id');
     }
 
     public function user(): BelongsTo
