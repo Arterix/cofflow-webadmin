@@ -24,6 +24,58 @@ Stack: **Laravel 13**, **PHP 8.4**, **Tailwind CSS v4**, **Vite**, **PostgreSQL/
 - **Order Monitor** — daftar order read-only dengan filter status/tipe/tanggal. Tampilan terurut per hari secara kronologis (`DATE(created_at) ASC, queue_number ASC`) dengan format nomor antrean 3 digit (`#001`, `#002`, dst.) yang mereset setiap pergantian hari.
 - **Pegawai** — kelola akun kasir/admin, aktif/nonaktif.
 - **Laporan** — laporan rentang tanggal: total order, revenue, per metode bayar, top 10 menu.
+- **Push Notification** — FCM alerts ke kasir/admin saat order baru, stok kritis, status berubah.
+- **Payment Gateway** — integrasi Midtrans (QRIS + Virtual Account) dengan webhook signature verification.
+
+---
+
+## Arsitektur
+
+### Pola: MVC + Service Layer + Observer
+
+```
+Request → Controller (thin) → Service (business logic) → Model → Database
+                                    ↕
+                              Observer (side effects: FCM, stock)
+```
+
+- **Controller tipis** — hanya validasi input, delegasi ke service, dan return response.
+- **5 Service class** mengenkapsulasi business logic:
+
+| Service | Tanggung Jawab |
+|---|---|
+| `StockService` | Validasi stok, deduction (dengan `lockForUpdate` untuk mencegah race condition), restoration pada cancel, opname adjustment |
+| `DiscountService` | Kalkulasi diskon multi-layer (produk, event, promo), batch-load untuk optimasi query |
+| `MidtransService` | Payment gateway QRIS/VA, webhook signature verification (reject di production bila key kosong) |
+| `FcmService` | Push notification via Firebase + persist ke DB |
+| `QueueService` | Generate queue number harian dengan atomic locking |
+
+- **OrderObserver** — hook ke event `created`/`updated` untuk trigger FCM alerts dan stock restoration saat cancel.
+- **Dual controller hierarchy**: `Api/` return JSON via `ApiResponse` trait; `Web/` return Blade views.
+- **Discount tidak stack** — saat banyak diskon eligible per item, hanya nilai terbesar yang dipakai.
+- **Status FSM** divalidasi di `StaffOrderController`:
+  `pending → processing → ready → completed`, `pending|processing → cancelled` (restore stok).
+
+### Concurrency & Data Integrity
+
+- **Stock deduction** menggunakan `lockForUpdate()` pada ingredients di dalam `DB::transaction()` — mencegah race condition saat concurrent orders.
+- **Queue number** menggunakan `lockForUpdate()` pada `MAX(queue_number)` — mencegah duplicate queue numbers.
+- **Order creation atomic** — validasi stok, create order, insert items, deduct stok semua di dalam satu transaction. Gagal di step manapun → rollback semua.
+- **Webhook signature** — di-reject di production bila server key tidak dikonfigurasi. Hanya bypass di local/testing.
+
+### API Response Format
+
+Semua endpoint menggunakan envelope konsisten:
+
+```json
+{ "success": true, "data": { ... }, "message": "OK" }
+```
+
+Error di-wrap secara global di `bootstrap/app.php`:
+- `ValidationException` → 422
+- `AuthenticationException` → 401
+- `ModelNotFoundException` → 404
+- Generic → 500
 
 ---
 
@@ -173,39 +225,133 @@ php artisan migrate:fresh --seed
 
 ```
 app/
-├── Console/Commands/         # ExpireUnpaidOrders command (scheduler)
-├── Http/Controllers/
-│   ├── Api/                  # Mobile REST API endpoints (Sanctum)
-│   └── Web/Admin/            # Web admin Blade controllers
-├── Models/                   # Eloquent models (Menu, Order, BomItem, CondimentBomItem, StockAdjustment, dll)
-├── Observers/OrderObserver   # BOM & Condiment BOM deduction + FCM trigger on order
-└── Services/                 # StockService, DiscountService, MidtransService, FcmService, ImageUploadService
+├── Console/Commands/                 # ExpireUnpaidOrders command (scheduler)
+├── Http/
+│   ├── Controllers/
+│   │   ├── Api/                      # Mobile REST API endpoints
+│   │   │   ├── AuthController        # register, login, logout, me, changePassword, FCM token
+│   │   │   ├── MenuController        # index, show, categories (public)
+│   │   │   ├── OrderController       # store, index, show, paymentStatus, destroy
+│   │   │   ├── NotificationController# CRUD notifikasi
+│   │   │   ├── WebhookController     # Midtrans webhook handler
+│   │   │   ├── Admin/                # Full admin API (menu, stok, diskon, analytics, staff)
+│   │   │   └── Staff/                # Staff order management + queue
+│   │   └── Web/
+│   │       ├── Admin/                # Web admin Blade controllers
+│   │       └── Auth/                 # Web login
+│   └── Middleware/
+│       ├── CheckRole.php             # API: variadic roles check
+│       └── EnsureAdmin.php           # Web: session-based admin gate
+├── Models/                           # Eloquent models (Menu, Order, BomItem, CondimentBomItem, StockAdjustment, UserVoucher, dll)
+├── Observers/
+│   └── OrderObserver.php             # FCM trigger, stock + voucher restore on cancel, award poin on complete
+├── Services/
+│   ├── StockService.php              # Validasi + potong stok (Menu BOM + Condiment BOM, with locking), restorasi
+│   ├── DiscountService.php           # Multi-layer discount calc + voucher poin (batch-optimized)
+│   ├── LoyaltyService.php            # Poin member, tier, reward, voucher
+│   ├── MidtransService.php           # Payment gateway + webhook verification
+│   ├── FcmService.php                # Push notification + DB persist
+│   ├── ImageUploadService.php        # Upload gambar menu
+│   └── QueueService.php              # Daily queue number (atomic)
+├── Traits/
+│   └── ApiResponse.php               # Consistent JSON envelope
+└── Providers/
+    └── AppServiceProvider.php        # Observer registration
 database/
-├── migrations/               # Skema lengkap (~25 migration files)
+├── factories/                        # Model factories untuk testing
+│   ├── UserFactory.php
+│   ├── MenuCategoryFactory.php
+│   ├── MenuFactory.php
+│   └── OrderFactory.php
+├── migrations/                       # Skema lengkap (~25 file)
 └── seeders/
-    ├── DatabaseSeeder.php    # Master + base lookups & seeded users
-    └── DummyDataSeeder.php   # Order + diskon + opname dummy
+    ├── DatabaseSeeder.php            # Master + base lookups & seeded users
+    ├── DummyDataSeeder.php           # Order + diskon + opname dummy
+    └── LoyaltySeeder.php             # Pengaturan poin + reward
 resources/
-├── css/app.css               # Tailwind v4 @theme + button/status classes
-└── views/admin/              # Blade templates per resource
+├── css/app.css                       # Tailwind v4 @theme + button/status classes
+└── views/admin/                      # Blade templates per resource
 routes/
-├── api.php                   # REST API (mobile)
-└── web.php                   # Admin dashboard (web)
+├── api.php                           # REST API (mobile) — 4 tier auth
+└── web.php                           # Admin dashboard (web)
 tests/
-├── Feature/                  # StockConcurrencyAndDeductionTest, ExpireUnpaidOrdersTest, OrderValidationTest
-└── Unit/                     # DiscountValidationTest
+├── Unit/
+│   ├── DiscountServiceTest.php       # Kalkulasi diskon percentage/fixed
+│   ├── DiscountValidationTest.php    # Validasi aturan diskon
+│   └── QueueServiceTest.php          # Queue number: first-of-day, increment, reset
+└── Feature/
+    ├── AuthApiTest.php               # Register, login, me, logout
+    ├── MenuApiTest.php               # Menu index, show, categories
+    ├── OrderApiTest.php              # Create, index, show, payment status
+    ├── OrderValidationTest.php       # Aturan walk-in, condiment
+    ├── StockConcurrencyAndDeductionTest.php # Lock + potong stok Menu/Condiment BOM
+    ├── ExpireUnpaidOrdersTest.php    # Auto-cancel order belum bayar + restore stok
+    └── LoyaltyPointsTest.php         # Poin, reward, voucher
 ```
+
 
 ---
 
-## Arsitektur Singkat
+## Database Schema (Ringkas)
 
-- **Business logic dibungkus Service**, bukan di Controller. Contoh: `StockService::deductForOrder`, `StockService::restoreForOrder`, `StockService::recordAdjustment`, `StockService::applyOpnameAdjustment`, `DiscountService::applyPromoCode`.
-- **OrderObserver** men-trigger stock deduction (Menu BOM + Condiment BOM) + FCM. Daftarnya di `AppServiceProvider::boot`.
+| Tabel | Deskripsi |
+|---|---|
+| `users` | Akun dengan role (customer/kasir/admin), FCM token, status aktif |
+| `menus` + `menu_categories` | Menu dengan kategori, harga, status aktif |
+| `condiment_groups` + `condiment_options` | Add-on (single/multi select) dengan additional price |
+| `menu_condiment_groups` | Pivot M:M menu ↔ condiment group |
+| `ingredients` + `bom_items` | Bahan baku + Bill of Materials per menu |
+| `orders` + `order_items` + `order_item_condiments` | Order dengan items, condiment snapshot, payment info |
+| `order_status_logs` | Timeline perubahan status order |
+| `product_discounts` / `promo_codes` / `event_discounts` | 3 jenis diskon |
+| `notifications` | In-app notification per user |
+| `stock_opnames` + `stock_opname_items` | Opname stok per shift |
+| `stock_adjustments` | Riwayat mutasi stok (audit) |
+| `condiment_bom_items` | BOM per condiment option |
+| `loyalty_settings` / `point_rewards` / `point_transactions` / `user_vouchers` | Program poin member |
+
+### Catatan Arsitektur
+
+- **Business logic dibungkus Service**, bukan di Controller. Contoh: `StockService::validateAndDeductForOrder`, `StockService::restoreForOrder`, `StockService::recordAdjustment`, `StockService::applyOpnameAdjustment`, `DiscountService::calculateOrderTotal`.
+- **OrderController** memotong stok (Menu BOM + Condiment BOM) di dalam transaksi setelah order item dibuat. **OrderObserver** menangani restore stok + voucher saat cancel, award poin saat completed, dan FCM. Daftarnya di `AppServiceProvider::boot`.
 - **Stock Audit & Concurrency** — setiap mutasi stok mencatat riwayat di `stock_adjustments`. Restorasi stok dilindungi kolom `stock_restored_at` untuk idempoten.
 - **Discount tidak stack** — saat banyak diskon eligible per item, hanya nilai terbesar yang dipakai.
 - **Status transitions** divalidasi di `StaffOrderController` API:
   `pending → processing → ready → completed`, `pending|processing → cancelled` (restore stok).
+
+---
+
+## Endpoint API (Ringkas)
+
+Base URL: `https://{host}/api`. Format response konsisten:
+
+```json
+{ "success": true, "data": { ... }, "message": "OK" }
+```
+
+### Public (tanpa auth)
+- `POST /auth/register`, `POST /auth/login` (throttle: 10/menit)
+- `GET /menus`, `GET /categories`
+- `POST /webhook/midtrans` (signature-verified)
+
+### Auth (semua role)
+- `POST /auth/logout`, `GET /auth/me`, `POST /auth/change-password`
+- `POST /auth/fcm-token`
+- `POST /orders`, `GET /orders`, `GET /orders/{id}`, `GET /orders/{id}/payment-status`
+- `POST /orders/quote` (hitung total + estimasi poin sebelum pesan)
+- `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all`
+
+### Customer (loyalty)
+- `GET /loyalty`, `GET /loyalty/history`, `GET /loyalty/rewards`, `POST /loyalty/rewards/{id}/redeem`, `GET /loyalty/vouchers`
+
+### Staff (kasir/admin)
+- `GET /staff/orders`, `GET /staff/orders/{id}`, `PATCH /staff/orders/{id}/status`
+- `GET /staff/queue/active`, `GET /staff/queue/estimate`
+
+### Admin only
+- CRUD: categories, menus (+ BOM + condiment attach), condiments, ingredients (+ restock), discounts
+- `GET /admin/analytics/*` — summary, weekly sales, top menus, peak hours, report
+- CRUD staff management
 
 ---
 
@@ -216,9 +362,50 @@ php artisan migrate:fresh --seed      # Reset DB + seed dummy
 php artisan route:list                # Daftar routes
 php artisan route:list --name=admin   # Filter admin routes
 php artisan tinker                    # REPL untuk eksplorasi model
+php artisan config:cache              # Cache config untuk production
+php artisan config:clear              # Clear config cache
 npm run build                         # Build production assets
 npm run dev                           # Vite dev (hot reload)
+php artisan test                      # Jalankan semua test
+php artisan test --testsuite=Unit     # Unit test saja
+php artisan test --testsuite=Feature  # Feature test saja
 ```
+
+---
+
+## Test
+
+### Jalankan Test
+
+```bash
+php artisan test
+```
+
+> **Prasyarat:** Feature tests membutuhkan database test. Pastikan `phpunit.xml` sudah dikonfigurasi dengan `DB_CONNECTION=sqlite` dan `DB_DATABASE=:memory:` untuk CI, atau gunakan database terpisah.
+
+### Test Coverage
+
+| File | Jumlah | Tipe | Cakupan |
+|------|--------|------|---------|
+| `tests/Unit/DiscountServiceTest.php` | 6 | Unit | Kalkulasi diskon percentage/fixed, edge cases (zero, exceeds base) |
+| `tests/Unit/QueueServiceTest.php` | 3 | Unit (DB) | Queue number: first-of-day, increment, daily reset |
+| `tests/Feature/AuthApiTest.php` | 7 | Feature | Register, login, me, logout, validasi duplicate email/password pendek |
+| `tests/Feature/MenuApiTest.php` | 6 | Feature | Menu index, show, categories, 404, public access tanpa auth |
+| `tests/Feature/OrderApiTest.php` | 8 | Feature | Create order (cash), auth required, validasi, index own orders, show, payment status |
+| `tests/Feature/OrderValidationTest.php` | — | Feature | Walk-in hanya kasir/admin, validasi condiment |
+| `tests/Feature/StockConcurrencyAndDeductionTest.php` | — | Feature | Lock + potong stok Menu BOM & Condiment BOM |
+| `tests/Feature/ExpireUnpaidOrdersTest.php` | — | Feature | Auto-cancel order belum bayar + restore stok |
+| `tests/Feature/LoyaltyPointsTest.php` | — | Feature | Poin member, reward, voucher |
+| `tests/Unit/DiscountValidationTest.php` | — | Unit | Validasi aturan diskon |
+
+### Factories
+
+| Factory | Model | Default |
+|---------|-------|---------|
+| `MenuCategoryFactory` | `MenuCategory` | Random name + slug |
+| `MenuFactory` | `Menu` | Random name, price 10k-80k, is_active = true |
+| `OrderFactory` | `Order` | pending, cash, unpaid, random queue number |
+| `UserFactory` | `User` | (bawaan Laravel) |
 
 ---
 
@@ -272,14 +459,17 @@ npm run dev                           # Vite dev (hot reload)
    ```
 6. `FcmService::dispatch` ([app/Services/FcmService.php](app/Services/FcmService.php)) sudah ter-wire ke `kreait/laravel-firebase`. Notifikasi otomatis persist ke DB + kirim FCM bila `user.fcm_token` terisi.
 
-### Midtrans (opsional)
+### Midtrans
 
 ```env
-MIDTRANS_SERVER_KEY=
-MIDTRANS_CLIENT_KEY=
+MIDTRANS_SERVER_KEY=SB-Mid-server-xxxxx
+MIDTRANS_CLIENT_KEY=SB-Mid-client-xxxxx
 MIDTRANS_IS_PRODUCTION=false
-MIDTRANS_WEBHOOK_SECRET=
 ```
+
+> **Penting:** Webhook signature di-reject di production bila `MIDTRANS_SERVER_KEY` kosong. Pastikan key sudah diisi sebelum deploy. Di local/testing, signature bypass otomatis aktif untuk kemudahan development.
+
+Semua konfigurasi Midtrans dibaca via `config('services.midtrans.*')`, bukan `env()` langsung — aman setelah `php artisan config:cache`.
 
 ### Cloudflare Tunnel (expose lokal ke mobile app)
 
@@ -413,23 +603,15 @@ Tabel: `loyalty_settings`, `point_rewards`, `point_transactions`, `user_vouchers
 
 ---
 
-## Endpoint API (ringkas)
+## Keamanan
 
-Base URL: `https://{host}/api`. Format response konsisten:
-
-```json
-{ "success": true, "data": { ... }, "message": "OK" }
-```
-
-Grup utama:
-- `POST /auth/login`, `POST /auth/register`, `GET /auth/me`
-- `GET /menus`, `GET /categories` (public)
-- `POST /orders`, `GET /orders` (customer); `POST /orders/quote` (hitung total + estimasi poin sebelum pesan)
-- `GET /loyalty`, `GET /loyalty/history`, `GET /loyalty/rewards`, `POST /loyalty/rewards/{id}/redeem`, `GET /loyalty/vouchers` (customer)
-- `PUT /auth/change-password`
-- `GET /staff/orders`, `PATCH /staff/orders/{id}/status` (kasir/admin)
-- `GET /admin/*` — semua endpoint admin (menu, stok, diskon, analytics, staff)
-- `POST /webhook/midtrans` (public, signature-verified)
+- **Auth API:** Sanctum bearer tokens, rate-limited login (10/menit).
+- **Auth Web:** Session-based, `EnsureAdmin` middleware cek `is_active` + role.
+- **Password change:** Invalidasi semua token lama + issue token baru.
+- **Webhook:** Midtrans signature verification — **webhook ditolak bila server key kosong**.
+- **Config:** Semua service credential dibaca via `config()`, aman setelah `config:cache`.
+- **Stock:** Deduction menggunakan `lockForUpdate()` di dalam transaction — data integrity terjaga saat concurrent access.
+- **Debug logging:** `LogInterceptor` hanya aktif di debug mode.
 
 ---
 

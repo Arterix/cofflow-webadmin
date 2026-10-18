@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Services\FcmService;
 use App\Services\LoyaltyService;
 use App\Services\StockService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -32,8 +33,10 @@ class OrderObserver
     {
         if ($order->wasChanged('status') && $order->status === 'cancelled') {
             $order->loadMissing('items.condiments.condimentOption.bomItems');
-            $this->stock->restoreForOrder($order);
-            $this->loyalty->releaseVoucherForOrder($order);
+            DB::transaction(function () use ($order) {
+                $this->stock->restoreForOrder($order);
+                $this->loyalty->releaseVoucherForOrder($order);
+            });
         }
 
         if ($order->wasChanged('status') && $order->status === 'completed') {

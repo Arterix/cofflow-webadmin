@@ -77,7 +77,7 @@ class MidtransService
 
     public function verifyWebhookSignature(array $payload): bool
     {
-        $serverKey = (string) config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', ''));
+        $serverKey = (string) config('services.midtrans.server_key');
 
         if (! $serverKey) {
             // Server key tidak dikonfigurasi. Tolak semua webhook agar tidak ada
@@ -108,8 +108,8 @@ class MidtransService
      */
     private function call(array $payload): array
     {
-        $serverKey    = (string) config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', ''));
-        $isProduction = (bool) config('services.midtrans.is_production', env('MIDTRANS_IS_PRODUCTION', false));
+        $serverKey    = (string) config('services.midtrans.server_key');
+        $isProduction = (bool) config('services.midtrans.is_production');
 
         if (! $serverKey) {
             throw new RuntimeException(
