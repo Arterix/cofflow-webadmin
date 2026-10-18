@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\Staff\QueueController;
 use App\Http\Controllers\Api\Staff\StaffOrderController;
+use App\Http\Controllers\Api\SupportChatController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/loyalty/rewards', [LoyaltyController::class, 'rewards']);
     Route::post('/loyalty/rewards/{id}/redeem', [LoyaltyController::class, 'redeem'])->middleware('throttle:20,1');
     Route::get('/loyalty/vouchers', [LoyaltyController::class, 'vouchers']);
+
+    Route::get('/support/messages', [SupportChatController::class, 'index']);
+    Route::post('/support/messages', [SupportChatController::class, 'store'])->middleware('throttle:30,1');
+    Route::get('/support/unread-count', [SupportChatController::class, 'unreadCount']);
 });
 
 // 3) Kasir + Admin

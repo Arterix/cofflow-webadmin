@@ -10,6 +10,7 @@
     $cards = [
         ['label' => 'Total Member', 'value' => number_format($stats['members'], 0, ',', '.'), 'icon' => 'groups'],
         ['label' => 'Poin Beredar', 'value' => number_format($stats['outstanding'], 0, ',', '.'), 'icon' => 'loyalty'],
+        ['label' => 'Poin Tertunda', 'value' => number_format($stats['pending'], 0, ',', '.'), 'icon' => 'schedule'],
         ['label' => 'Poin Diberikan', 'value' => number_format($stats['earned'], 0, ',', '.'), 'icon' => 'flash_on'],
         ['label' => 'Poin Ditukar', 'value' => number_format($stats['redeemed'], 0, ',', '.'), 'icon' => 'local_offer'],
     ];
@@ -24,7 +25,7 @@
         </div>
     @endunless
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         @foreach ($cards as $c)
             <div class="rounded-2xl border-l-4 bg-white border-primary-100 p-5 shadow-sm">
                 <div class="flex items-start justify-between">
@@ -68,6 +69,7 @@
                         <th class="text-left px-4 py-3">Member</th>
                         <th class="text-center px-4 py-3">Tier</th>
                         <th class="text-right px-4 py-3">Saldo Poin</th>
+                        <th class="text-right px-4 py-3">Poin Tertunda</th>
                         <th class="text-right px-4 py-3">Total Poin Didapat</th>
                         <th class="text-left px-4 py-3">Bergabung</th>
                         <th></th>
@@ -82,6 +84,7 @@
                             </td>
                             <td class="px-4 py-3 text-center"><span class="status-pill {{ $tierPill[$m->tier] ?? '' }} capitalize">{{ $m->tier }}</span></td>
                             <td class="px-4 py-3 text-right font-semibold">{{ number_format($m->points_balance, 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-right text-gray-500">{{ (int) $m->pending_points > 0 ? '+'.number_format((int) $m->pending_points, 0, ',', '.') : '-' }}</td>
                             <td class="px-4 py-3 text-right">{{ number_format($m->lifetime_points, 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-xs text-gray-500">{{ $m->created_at?->format('d/m/Y') }}</td>
                             <td class="px-4 py-3 text-right">
@@ -98,7 +101,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">Belum ada member</td></tr>
+                        <tr><td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500">Belum ada member</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -108,6 +111,42 @@
     {{-- ============ HISTORY ============ --}}
     @elseif ($tab === 'history')
         <div class="bg-white rounded-2xl border border-primary-100 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-primary-100">
+                <h3 class="font-display font-semibold text-primary">Poin Tertunda</h3>
+                <p class="text-xs text-gray-500">Pesanan dari aplikasi yang belum selesai. Poin masuk saldo saat status <b>selesai</b>, batal otomatis jika pesanan dibatalkan.</p>
+            </div>
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[640px]">
+                <thead class="bg-primary-50 text-xs uppercase text-primary">
+                    <tr>
+                        <th class="text-left px-4 py-3">Waktu Pesan</th>
+                        <th class="text-left px-4 py-3">Member</th>
+                        <th class="text-left px-4 py-3">Pesanan</th>
+                        <th class="text-center px-4 py-3">Status</th>
+                        <th class="text-right px-4 py-3">Poin</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-primary-100">
+                    @forelse ($pendingOrders as $o)
+                        <tr>
+                            <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{{ $o->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3 font-medium text-primary">{{ $o->user?->name ?? '-' }}</td>
+                            <td class="px-4 py-3"><a href="{{ route('admin.orders.show', $o->id) }}" class="text-primary underline">#{{ $o->id }}</a></td>
+                            <td class="px-4 py-3 text-center"><span class="status-pill is-muted">Menunggu selesai</span></td>
+                            <td class="px-4 py-3 text-right font-semibold text-gray-500">+{{ number_format((int) $o->points_base, 0, ',', '.') }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="px-4 py-6 text-center text-sm text-gray-500">Tidak ada poin tertunda</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-primary-100 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-primary-100">
+                <h3 class="font-display font-semibold text-primary">Riwayat Transaksi Poin</h3>
+            </div>
             <div class="overflow-x-auto">
             <table class="w-full text-sm min-w-[760px]">
                 <thead class="bg-primary-50 text-xs uppercase text-primary">

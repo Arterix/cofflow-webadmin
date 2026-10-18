@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\Admin\OrderMonitorController;
 use App\Http\Controllers\Web\Admin\ReportController;
 use App\Http\Controllers\Web\Admin\StaffController;
 use App\Http\Controllers\Web\Admin\StockOpnameController;
+use App\Http\Controllers\Web\Admin\SupportChatController;
 use App\Http\Controllers\Web\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
@@ -99,6 +100,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Report
     Route::get('/report', [ReportController::class, 'index'])->name('report.index');
+
+    // Chat CS
+    Route::get('/support', [SupportChatController::class, 'index'])->name('support.index');
+    Route::post('/support/{customer}', [SupportChatController::class, 'reply'])->name('support.reply');
 });
 
 // API root status (so visiting / when not logged-in shows admin login)

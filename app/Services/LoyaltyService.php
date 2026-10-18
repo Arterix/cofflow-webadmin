@@ -129,7 +129,6 @@ class LoyaltyService
 
         [$user, $points, $oldTier] = $result;
         $order->points_earned = $points;
-        $newTier = $this->settings()->tierFor($user->lifetime_points);
 
         try {
             $this->fcm->sendToUser(
@@ -139,15 +138,32 @@ class LoyaltyService
                 ['type' => 'points_earned', 'order_id' => (string) $order->id, 'points' => (string) $points],
                 'points_earned'
             );
-            if ($newTier !== $oldTier) {
-                $this->fcm->sendToUser(
-                    $user->id,
-                    'Naik Level Membership',
-                    'Selamat! Kamu sekarang member '.ucfirst($newTier),
-                    ['type' => 'tier_up', 'tier' => $newTier],
-                    'tier_up'
-                );
-            }
+        } catch (Throwable $e) {
+            Log::warning('Loyalty notification failed', ['error' => $e->getMessage()]);
+        }
+
+        $this->notifyTierUp($user, $oldTier);
+    }
+
+    /**
+     * Tier is derived from lifetime_points, so it rises by itself once the
+     * threshold is reached; this only tells the customer it happened.
+     */
+    private function notifyTierUp(User $user, string $oldTier): void
+    {
+        $newTier = $this->settings()->tierFor($user->lifetime_points);
+        if (PointReward::tierRank($newTier) <= PointReward::tierRank($oldTier)) {
+            return;
+        }
+
+        try {
+            $this->fcm->sendToUser(
+                $user->id,
+                'Naik Level Membership',
+                'Selamat! Kamu sekarang member '.ucfirst($newTier),
+                ['type' => 'tier_up', 'tier' => $newTier],
+                'tier_up'
+            );
         } catch (Throwable $e) {
             Log::warning('Loyalty notification failed', ['error' => $e->getMessage()]);
         }
@@ -215,7 +231,8 @@ class LoyaltyService
 
     public function adjust(User $user, int $points, string $reason, ?User $admin = null): PointTransaction
     {
-        return DB::transaction(function () use ($user, $points, $reason, $admin) {
+        $oldTier = null;
+        $result = DB::transaction(function () use ($user, $points, $reason, $admin, &$oldTier) {
             $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
             if ($points === 0) {
                 $this->fail('Jumlah poin tidak boleh 0', 'points');
@@ -224,18 +241,28 @@ class LoyaltyService
                 $this->fail('Saldo poin tidak boleh minus (saldo: '.$user->points_balance.')', 'points');
             }
 
+            $oldTier = $this->settings()->tierFor($user->lifetime_points);
             $user->points_balance += $points;
+            // Bonus points count toward tier; corrections (minus) only touch the balance.
+            if ($points > 0) {
+                $user->lifetime_points += $points;
+            }
             $user->save();
 
-            return PointTransaction::create([
+            return [$user, PointTransaction::create([
                 'user_id' => $user->id,
                 'type' => 'adjust',
                 'points' => $points,
                 'balance_after' => $user->points_balance,
                 'description' => $reason,
                 'created_by' => $admin?->id,
-            ]);
+            ])];
         });
+
+        [$fresh, $transaction] = $result;
+        $this->notifyTierUp($fresh, $oldTier);
+
+        return $transaction;
     }
 
     /**

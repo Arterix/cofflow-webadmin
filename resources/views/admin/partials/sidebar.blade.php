@@ -11,6 +11,7 @@
         ['route' => 'admin.orders.index',      'match' => 'admin.orders.*',     'label' => 'Order Monitor', 'icon' => 'receipt_long'],
         ['route' => 'admin.staff.index',       'match' => 'admin.staff.*',      'label' => 'Pegawai',       'icon' => 'groups'],
         ['route' => 'admin.report.index',      'match' => 'admin.report.*',     'label' => 'Laporan',       'icon' => 'assessment'],
+        ['route' => 'admin.support.index',     'match' => 'admin.support.*',    'label' => 'Chat CS',       'icon' => 'support_agent'],
     ];
 @endphp
 

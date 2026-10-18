@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LoyaltySetting;
+use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\User;
 use App\Services\LoyaltyService;
@@ -24,6 +25,7 @@ class MembershipController extends Controller
             ->when($request->query('q'), fn ($q, $term) => $q->where(fn ($w) => $w
                 ->where('name', 'like', "%{$term}%")
                 ->orWhere('email', 'like', "%{$term}%")))
+            ->withSum(['orders as pending_points' => fn ($q) => $this->pendingScope($q)], 'points_base')
             ->orderByDesc('lifetime_points')
             ->orderBy('name')
             ->get();
@@ -33,14 +35,31 @@ class MembershipController extends Controller
             ->limit(200)
             ->get();
 
+        // Poin dari pesanan app yang sudah dibuat tapi belum selesai: masuk saldo saat completed.
+        $pendingOrders = $this->pendingScope(Order::query())
+            ->with('user:id,name')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get(['id', 'user_id', 'status', 'points_base', 'created_at']);
+
         $stats = [
             'members' => $members->count(),
+            'pending' => (int) $this->pendingScope(Order::query())->sum('points_base'),
             'outstanding' => (int) User::where('role', 'customer')->sum('points_balance'),
             'earned' => (int) PointTransaction::where('type', 'earn')->sum('points'),
             'redeemed' => (int) -PointTransaction::where('type', 'redeem')->sum('points'),
         ];
 
-        return view('admin.membership.index', compact('settings', 'tab', 'members', 'transactions', 'stats'));
+        return view('admin.membership.index', compact('settings', 'tab', 'members', 'transactions', 'pendingOrders', 'stats'));
+    }
+
+    private function pendingScope($query)
+    {
+        return $query->where('order_type', 'preorder')
+            ->where('points_base', '>', 0)
+            ->whereNull('points_awarded_at')
+            ->where('status', '!=', 'cancelled')
+            ->whereNotNull('user_id');
     }
 
     public function updateSettings(Request $request): RedirectResponse

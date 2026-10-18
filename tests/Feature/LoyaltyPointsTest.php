@@ -199,4 +199,92 @@ class LoyaltyPointsTest extends TestCase
         $this->assertSame(0, $this->customer->fresh()->points_balance);
         $this->assertSame(0, $order->points_earned);
     }
+
+    public function test_menu_api_exposes_points_per_item(): void
+    {
+        $this->latte->update(['points_override' => 3]);
+        $menus = collect($this->getJson('/api/menus')->assertOk()->json('data'))->keyBy('name');
+
+        $this->assertSame(3, $menus['Latte']['points_per_item']);
+        $this->assertSame(1, $menus['Croissant']['points_per_item']);
+    }
+
+    public function test_admin_sees_pending_points_until_completed(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin', 'email' => 'admin@test.com', 'password' => 'password',
+            'role' => 'admin', 'is_active' => true,
+        ]);
+        $order = $this->placeOrder($this->customer);
+
+        $this->actingAs($admin, 'web')
+            ->get(route('admin.membership.index', ['tab' => 'history']))
+            ->assertOk()
+            ->assertSee('Menunggu selesai')
+            ->assertSee('#'.$order->id);
+
+        $this->complete($order);
+
+        $this->actingAs($admin, 'web')
+            ->get(route('admin.membership.index', ['tab' => 'history']))
+            ->assertOk()
+            ->assertSee('Tidak ada poin tertunda')
+            ->assertSee("Pesanan #{$order->id} selesai");
+    }
+
+    public function test_tier_rises_automatically_when_threshold_reached(): void
+    {
+        LoyaltySetting::current()->update(['silver_threshold' => 2, 'gold_threshold' => 10]);
+
+        $this->complete($this->placeOrder($this->customer)); // +2 => silver
+
+        Sanctum::actingAs($this->customer->fresh());
+        $this->getJson('/api/loyalty')->assertOk()->assertJsonPath('data.tier', 'silver');
+        $this->assertDatabaseHas('notifications', ['user_id' => $this->customer->id, 'type' => 'tier_up']);
+
+        // Redeeming spends balance but never lowers the tier
+        $reward = PointReward::create(['name' => 'X', 'type' => 'nominal', 'value' => 1000, 'points_cost' => 2, 'min_tier' => 'bronze']);
+        $this->postJson("/api/loyalty/rewards/{$reward->id}/redeem")->assertCreated();
+        Sanctum::actingAs($this->customer->fresh());
+        $this->getJson('/api/loyalty')->assertJsonPath('data.points_balance', 0)->assertJsonPath('data.tier', 'silver');
+    }
+
+    public function test_admin_bonus_points_count_toward_tier(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin', 'email' => 'admin@test.com', 'password' => 'password',
+            'role' => 'admin', 'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.membership.adjust', $this->customer), ['points' => 60, 'reason' => 'bonus'])
+            ->assertRedirect();
+
+        $fresh = $this->customer->fresh();
+        $this->assertSame(60, $fresh->lifetime_points);
+        $this->assertSame('silver', $fresh->tier);
+        $this->assertDatabaseHas('notifications', ['user_id' => $this->customer->id, 'type' => 'tier_up']);
+
+        // Minus correction only touches the balance
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.membership.adjust', $this->customer), ['points' => -10, 'reason' => 'koreksi']);
+        $this->assertSame(60, $this->customer->fresh()->lifetime_points);
+        $this->assertSame(50, $this->customer->fresh()->points_balance);
+    }
+
+    public function test_cancelled_order_drops_pending_points(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin', 'email' => 'admin@test.com', 'password' => 'password',
+            'role' => 'admin', 'is_active' => true,
+        ]);
+        $order = $this->placeOrder($this->customer);
+        $order->update(['status' => 'cancelled']);
+
+        $this->actingAs($admin, 'web')
+            ->get(route('admin.membership.index', ['tab' => 'history']))
+            ->assertOk()
+            ->assertSee('Tidak ada poin tertunda');
+        $this->assertSame(0, $this->customer->fresh()->points_balance);
+    }
 }
