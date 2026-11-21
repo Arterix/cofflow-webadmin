@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\StockAdjustment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -29,6 +30,12 @@ class ReportController extends Controller
             ->groupBy('menu_id')->orderByDesc('total_qty')->limit(10)
             ->with('menu:id,name')->get();
 
+        $stockBase = StockAdjustment::with('ingredient')
+            ->whereBetween('created_at', [$start, $end]);
+        $stockMovements = (clone $stockBase)->latest()->get();
+        $stockIn = (float) (clone $stockBase)->where('delta', '>', 0)->sum('delta');
+        $stockOut = abs((float) (clone $stockBase)->where('delta', '<', 0)->sum('delta'));
+
         return view('admin.report.index', [
             'start' => $start->toDateString(),
             'end' => $end->toDateString(),
@@ -36,6 +43,9 @@ class ReportController extends Controller
             'totalRevenue' => $totalRevenue,
             'payment' => $payment,
             'topMenus' => $topMenus,
+            'stockMovements' => $stockMovements,
+            'stockIn' => $stockIn,
+            'stockOut' => $stockOut,
         ]);
     }
 }

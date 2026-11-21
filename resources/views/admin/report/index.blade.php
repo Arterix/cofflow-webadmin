@@ -64,5 +64,25 @@
             </ol>
         </div>
     </div>
+
+    <div class="bg-white rounded-2xl border border-primary-100 p-5 shadow-sm">
+        <h2 class="font-display font-semibold text-primary mb-3">Arus Stok</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div class="rounded-xl bg-green-50 p-4"><div class="text-xs text-gray-500">Stok Masuk</div><div class="text-xl font-semibold text-green-700">{{ number_format($stockIn, 3, ',', '.') }}</div></div>
+            <div class="rounded-xl bg-red-50 p-4"><div class="text-xs text-gray-500">Stok Keluar</div><div class="text-xl font-semibold text-red-700">{{ number_format($stockOut, 3, ',', '.') }}</div></div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-xs text-gray-500"><tr><th class="text-left py-2">Waktu</th><th class="text-left">Bahan</th><th class="text-left">Jenis</th><th class="text-right">Perubahan</th><th class="text-left">Keterangan</th></tr></thead>
+                <tbody class="divide-y divide-primary-100">
+                    @forelse ($stockMovements as $movement)
+                        <tr><td class="py-2">{{ $movement->created_at->format('d/m/Y H:i') }}</td><td>{{ $movement->ingredient?->name }}</td><td>{{ $movement->type }}</td><td class="text-right {{ $movement->delta >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ $movement->delta >= 0 ? '+' : '' }}{{ number_format((float) $movement->delta, 3, ',', '.') }} {{ $movement->ingredient?->unit }}</td><td>{{ $movement->reason }}</td></tr>
+                    @empty
+                        <tr><td colspan="5" class="py-6 text-center text-gray-500">Belum ada mutasi stok</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 @endsection

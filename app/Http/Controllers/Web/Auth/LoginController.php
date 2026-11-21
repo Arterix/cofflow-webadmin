@@ -38,7 +38,7 @@ class LoginController extends Controller
             ]);
         }
 
-        if (! $user->isAdmin()) {
+        if (! in_array($user->role, ['admin', 'owner'], true)) {
             Auth::logout();
             throw ValidationException::withMessages([
                 'email' => __('Akun ini tidak memiliki akses ke dashboard admin'),
@@ -47,7 +47,7 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.dashboard'));
+        return redirect()->intended($user->isOwner() ? route('owner.dashboard') : route('admin.dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('phone', 20)->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role', 10)->default('customer'); // customer | kasir | admin
+            $table->string('role', 10)->default('customer'); // customer | kasir | admin | owner
             $table->boolean('is_active')->default(true);
             $table->string('avatar_url', 500)->nullable();
             $table->string('fcm_token', 500)->nullable();

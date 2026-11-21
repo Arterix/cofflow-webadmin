@@ -3,6 +3,7 @@
 use App\Console\Commands\ExpireUnpaidOrders;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureOwner;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => CheckRole::class,
             'admin' => EnsureAdmin::class,
+            'owner' => EnsureOwner::class,
         ]);
         // Redirect guests to admin login when they try to enter the dashboard.
         $middleware->redirectGuestsTo(fn () => route('admin.login'));

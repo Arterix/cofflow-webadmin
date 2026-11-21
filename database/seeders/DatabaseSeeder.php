@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\BomItem;
+use App\Models\CondimentBomItem;
 use App\Models\CondimentGroup;
 use App\Models\CondimentOption;
 use App\Models\Ingredient;
@@ -19,10 +20,21 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'admin@cofflow.test'],
             [
-                'name' => 'Owner Konco Space',
+                'name' => 'Admin Konco Space',
                 'phone' => '081200000001',
                 'password' => 'password',
                 'role' => 'admin',
+                'is_active' => true,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'owner@cofflow.test'],
+            [
+                'name' => 'Owner Konco Space',
+                'phone' => '081200000004',
+                'password' => 'password',
+                'role' => 'owner',
                 'is_active' => true,
             ]
         );
@@ -94,14 +106,27 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Extra'],
             ['type' => 'multi_select', 'is_required' => false]
         );
-        CondimentOption::firstOrCreate(
+        $extraEspresso = CondimentOption::firstOrCreate(
             ['condiment_group_id' => $extraGroup->id, 'name' => 'Extra Espresso Shot'],
             ['additional_price' => 5000]
         );
-        CondimentOption::firstOrCreate(
+        $whippedCream = CondimentOption::firstOrCreate(
             ['condiment_group_id' => $extraGroup->id, 'name' => 'Whipped Cream'],
             ['additional_price' => 3000]
         );
+
+        CondimentBomItem::firstOrCreate(
+            ['condiment_option_id' => $extraEspresso->id, 'ingredient_id' => $coffeeBean->id],
+            ['quantity' => 18]
+        );
+        $extraSugar = CondimentOption::where('condiment_group_id', $sugarGroup->id)
+            ->where('name', 'Extra Sugar')->first();
+        if ($extraSugar) {
+            CondimentBomItem::firstOrCreate(
+                ['condiment_option_id' => $extraSugar->id, 'ingredient_id' => $sugar->id],
+                ['quantity' => 10]
+            );
+        }
 
         // ----- Menus + BOM + Condiment associations -----
         $menusData = [

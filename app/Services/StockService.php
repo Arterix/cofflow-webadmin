@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Menu;
 use App\Models\Order;
+use App\Models\StockAdjustment;
 use App\Models\StockOpname;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -126,8 +127,19 @@ class StockService
             $ingredient = $lockedIngredients->get($ingredientId);
             $wasCritical = (float) $ingredient->current_stock < (float) $ingredient->minimum_stock;
 
-            $ingredient->current_stock = (float) $ingredient->current_stock - $info['needed'];
+            $before = (float) $ingredient->current_stock;
+            $ingredient->current_stock = $before - $info['needed'];
             $ingredient->save();
+            StockAdjustment::create([
+                'ingredient_id' => $ingredient->id,
+                'adjusted_by' => $order->cashier_id ?? $order->user_id ?? auth()->id() ?? 1,
+                'type' => 'order_deduct',
+                'before' => $before,
+                'after' => (float) $ingredient->current_stock,
+                'delta' => -$info['needed'],
+                'reason' => 'Order #'.$order->id,
+                'notes' => $info['menu_name'],
+            ]);
 
             if (! $wasCritical && (float) $ingredient->current_stock < (float) $ingredient->minimum_stock) {
                 $criticalNow[$ingredientId] = $ingredient;
@@ -158,8 +170,18 @@ class StockService
                 if (! $ingredient) {
                     continue;
                 }
+                $before = (float) $ingredient->current_stock;
                 $ingredient->current_stock = (float) $item->physical_stock;
                 $ingredient->save();
+                StockAdjustment::create([
+                    'ingredient_id' => $ingredient->id,
+                    'adjusted_by' => auth()->id() ?? 1,
+                    'type' => 'opname',
+                    'before' => $before,
+                    'after' => (float) $ingredient->current_stock,
+                    'delta' => (float) $ingredient->current_stock - $before,
+                    'reason' => 'Opname #'.$opname->id,
+                ]);
             }
         });
     }
@@ -245,8 +267,18 @@ class StockService
 
         foreach ($restore as $ingredientId => $amount) {
             $ingredient = $lockedIngredients->get($ingredientId);
-            $ingredient->current_stock = (float) $ingredient->current_stock + $amount;
+            $before = (float) $ingredient->current_stock;
+            $ingredient->current_stock = $before + $amount;
             $ingredient->save();
+            StockAdjustment::create([
+                'ingredient_id' => $ingredient->id,
+                'adjusted_by' => $order->cashier_id ?? $order->user_id ?? auth()->id() ?? 1,
+                'type' => 'order_restore',
+                'before' => $before,
+                'after' => (float) $ingredient->current_stock,
+                'delta' => $amount,
+                'reason' => 'Restore order #'.$order->id,
+            ]);
         }
 
         $order->stock_restored_at = now();

@@ -34,12 +34,38 @@
                                 </span>
                                 <div class="min-w-0">
                                     <span class="font-medium text-primary">{{ $opt->name }}</span>
+                                    @if ($opt->bomItems->isNotEmpty())
+                                        <div class="text-xs text-gray-500 mt-1 space-y-1">
+                                            @foreach ($opt->bomItems as $bom)
+                                                <div class="flex items-center gap-2">
+                                                    <span>BOM: {{ $bom->ingredient->name }} {{ $bom->quantity }}{{ $bom->ingredient->unit }}</span>
+                                                    <form method="POST" action="{{ route('admin.condiments.bom.destroy', $bom) }}" onsubmit="return confirm('Hapus BOM ini?')">
+                                                        @csrf @method('DELETE')
+                                                        <button type="submit" class="text-xs text-red-600 hover:text-red-800 underline" aria-label="Hapus BOM {{ $bom->ingredient->name }}">Hapus</button>
+                                                    </form>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                     @if ((float) $opt->additional_price > 0)
                                         <span class="ml-2 text-xs text-accent-dark">+ Rp {{ number_format((float) $opt->additional_price, 0, ',', '.') }}</span>
                                     @endif
                                 </div>
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
+                                <details class="js-popover inline-block text-left relative">
+                                    <summary class="btn-action btn-edit cursor-pointer list-none">BOM</summary>
+                                    <form method="POST" action="{{ route('admin.condiments.options.bom.update', $opt) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
+                                        @csrf @method('PUT')
+                                        <select name="ingredient_id" required class="w-full rounded-md border border-primary-100 px-2 py-1.5 text-sm">
+                                            @foreach ($ingredients as $ingredient)
+                                                <option value="{{ $ingredient->id }}">{{ $ingredient->name }} ({{ $ingredient->unit }})</option>
+                                            @endforeach
+                                        </select>
+                                        <input name="quantity" type="number" step="0.001" min="0.001" placeholder="Jumlah" required class="w-full rounded-md border border-primary-100 px-2 py-1.5 text-sm" />
+                                        <button class="btn-action btn-edit btn-action-block">Simpan BOM</button>
+                                    </form>
+                                </details>
                                 <details class="js-popover inline-block text-left relative">
                                     <summary class="btn-action btn-edit cursor-pointer list-none">Edit</summary>
                                     <form method="POST" action="{{ route('admin.condiments.options.update', $opt) }}"

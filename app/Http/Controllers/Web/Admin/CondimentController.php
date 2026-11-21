@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Web\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CondimentBomItem;
 use App\Models\CondimentGroup;
 use App\Models\CondimentOption;
+use App\Models\Ingredient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,8 +17,9 @@ class CondimentController extends Controller
 {
     public function index(): View
     {
-        $groups = CondimentGroup::with('options')->orderBy('name')->get();
-        return view('admin.condiments.index', compact('groups'));
+        $groups = CondimentGroup::with('options.bomItems.ingredient')->orderBy('name')->get();
+        $ingredients = Ingredient::orderBy('name')->get();
+        return view('admin.condiments.index', compact('groups', 'ingredients'));
     }
 
     public function storeGroup(Request $request): RedirectResponse
@@ -82,6 +85,27 @@ class CondimentController extends Controller
             'additional_price' => $data['additional_price'] ?? 0,
         ]);
         return back()->with('status', 'Option diperbarui');
+    }
+
+    public function updateBom(Request $request, CondimentOption $option): RedirectResponse
+    {
+        $data = $request->validate([
+            'ingredient_id' => ['required', 'exists:ingredients,id'],
+            'quantity' => ['required', 'numeric', 'gt:0'],
+        ]);
+
+        CondimentBomItem::updateOrCreate(
+            ['condiment_option_id' => $option->id, 'ingredient_id' => $data['ingredient_id']],
+            ['quantity' => $data['quantity']]
+        );
+
+        return back()->with('status', 'BOM opsi diperbarui');
+    }
+
+    public function destroyBom(CondimentBomItem $bom): RedirectResponse
+    {
+        $bom->delete();
+        return back()->with('status', 'BOM opsi dihapus');
     }
 
     public function destroyOption(CondimentOption $option): RedirectResponse

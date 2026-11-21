@@ -13,6 +13,7 @@ use App\Http\Controllers\Web\Admin\StaffController;
 use App\Http\Controllers\Web\Admin\StockOpnameController;
 use App\Http\Controllers\Web\Admin\SupportChatController;
 use App\Http\Controllers\Web\Auth\LoginController;
+use App\Http\Controllers\Web\OwnerController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('admin.dashboard'));
@@ -23,6 +24,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->name('admin.login.attempt');
 });
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('admin.logout');
+
+// ----- Owner read-only portal -----
+Route::middleware(['auth', 'owner'])->prefix('owner')->name('owner.')->group(function () {
+    Route::get('/', [OwnerController::class, 'dashboard'])->name('dashboard');
+    Route::get('/report', [OwnerController::class, 'report'])->name('report');
+});
 
 // ----- Admin dashboard -----
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -52,6 +59,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/condiments/groups/{group}/options', [CondimentController::class, 'storeOption'])->name('condiments.groups.options.store');
     Route::post('/condiments/groups/{group}/options/reorder', [CondimentController::class, 'reorderOptions'])->name('condiments.groups.options.reorder');
     Route::put('/condiments/options/{option}', [CondimentController::class, 'updateOption'])->name('condiments.options.update');
+    Route::put('/condiments/options/{option}/bom', [CondimentController::class, 'updateBom'])->name('condiments.options.bom.update');
+    Route::delete('/condiments/bom/{bom}', [CondimentController::class, 'destroyBom'])->name('condiments.bom.destroy');
     Route::delete('/condiments/options/{option}', [CondimentController::class, 'destroyOption'])->name('condiments.options.destroy');
 
     // Ingredients
