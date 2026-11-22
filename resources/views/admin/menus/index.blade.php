@@ -60,14 +60,14 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <div class="inline-flex flex-wrap justify-end gap-1">
-                                    <a href="{{ route('admin.menus.bom.edit', $menu) }}" class="btn-action btn-info">Resep</a>
+                                <div class="table-actions table-actions--menu">
                                     <a href="{{ route('admin.menus.edit', $menu) }}" class="btn-action btn-edit">Edit</a>
-                                    <form method="POST" action="{{ route('admin.menus.toggle', $menu) }}" class="inline">
+                                    <a href="{{ route('admin.menus.bom.edit', $menu) }}" class="btn-action btn-info">Resep</a>
+                                    <form method="POST" action="{{ route('admin.menus.toggle', $menu) }}">
                                         @csrf @method('PATCH')
-                                        <button class="px-2.5 py-1.5 rounded-md text-xs bg-secondary-dark text-primary hover:bg-primary hover:text-white">{{ $menu->is_active ? 'Off' : 'On' }}</button>
+                                        <button class="btn-action btn-add">{{ $menu->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
                                     </form>
-                                    <form method="POST" action="{{ route('admin.menus.destroy', $menu) }}" class="inline" onsubmit="return confirm('Hapus menu ini?')">
+                                    <form method="POST" action="{{ route('admin.menus.destroy', $menu) }}" onsubmit="return confirm('Hapus menu ini?')">
                                         @csrf @method('DELETE')
                                         <button class="btn-action btn-delete">Hapus</button>
                                     </form>

@@ -88,9 +88,9 @@
                             <td class="px-4 py-3 text-right">{{ number_format($m->lifetime_points, 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-xs text-gray-500">{{ $m->created_at?->format('d/m/Y') }}</td>
                             <td class="px-4 py-3 text-right">
-                                <details class="js-popover inline-block text-left relative">
+                                <details class="js-popover relative">
                                     <summary class="btn-action btn-edit cursor-pointer list-none">Sesuaikan Poin</summary>
-                                    <form method="POST" action="{{ route('admin.membership.adjust', $m) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
+                                    <form method="POST" action="{{ route('admin.membership.adjust', $m) }}" class="absolute left-1/2 -translate-x-1/2 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
                                         @csrf
                                         <input name="points" type="number" required placeholder="+50 atau -20" class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" />
                                         <input name="reason" required maxlength="200" placeholder="Alasan (wajib)" class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" />

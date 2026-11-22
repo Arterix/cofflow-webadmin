@@ -50,7 +50,6 @@
             <thead class="bg-primary-50 text-xs uppercase text-primary">
                 <tr>
                     <th class="text-left px-4 py-3">Bahan</th>
-                    <th class="text-center px-4 py-3">Unit</th>
                     <th class="text-right px-4 py-3">Sistem</th>
                     <th class="text-right px-4 py-3">Fisik</th>
                     <th class="text-right px-4 py-3">Selisih</th>
@@ -76,11 +75,10 @@
                     @endphp
                     <tr class="{{ $rowCls }}">
                         <td class="px-4 py-3 font-medium text-primary">{{ $item->ingredient?->name }}</td>
-                        <td class="px-4 py-3 text-center text-xs text-gray-500">{{ $item->ingredient?->unit }}</td>
-                        <td class="px-4 py-3 text-right tabular-nums">{{ rtrim(rtrim((string) $item->system_stock, '0'), '.') }}</td>
-                        <td class="px-4 py-3 text-right tabular-nums">{{ rtrim(rtrim((string) $item->physical_stock, '0'), '.') }}</td>
+                        <td class="px-4 py-3 text-right tabular-nums">{{ rtrim(rtrim(number_format((float) $item->system_stock, 3, ',', '.'), '0'), ',') }} {{ $item->ingredient?->unit }}</td>
+                        <td class="px-4 py-3 text-right tabular-nums">{{ rtrim(rtrim(number_format((float) $item->physical_stock, 3, ',', '.'), '0'), ',') }} {{ $item->ingredient?->unit }}</td>
                         <td class="px-4 py-3 text-right tabular-nums {{ $varCls }}">
-                            {{ $v > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($v, 3, '.', ''), '0'), '.') }}
+                            {{ $v > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($v, 3, ',', '.'), '0'), ',') }} {{ $item->ingredient?->unit }}
                         </td>
                         <td class="px-4 py-3 text-xs text-gray-600">{{ $item->variance_reason ? ($reasons[$item->variance_reason] ?? $item->variance_reason) : '-' }}</td>
                         <td class="px-4 py-3 text-xs text-gray-600">{{ $item->notes ?? '-' }}</td>

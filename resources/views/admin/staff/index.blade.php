@@ -36,9 +36,10 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <details class="js-popover inline-block text-left relative">
+                            <div class="table-actions">
+                            <details class="js-popover relative">
                                 <summary class="btn-action btn-edit cursor-pointer list-none">Edit</summary>
-                                <form method="POST" action="{{ route('admin.staff.update', $s) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
+                                <form method="POST" action="{{ route('admin.staff.update', $s) }}" class="absolute left-1/2 -translate-x-1/2 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
                                     @csrf @method('PUT')
                                     <input name="name" value="{{ $s->name }}" required class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" />
                                     <input name="phone" value="{{ $s->phone }}" class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" />
@@ -60,6 +61,7 @@
                             @else
                                 <button disabled class="px-2.5 py-1.5 rounded-md text-xs bg-gray-100 text-gray-400 cursor-not-allowed">Diri sendiri</button>
                             @endif
+                            </div>
                         </td>
                     </tr>
                 @endforeach

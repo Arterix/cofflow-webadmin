@@ -6,28 +6,29 @@
 @source '../**/*.js';
 
 @theme {
-    /* Konco Space brand colors — see context/CLAUDE.md */
-    --color-primary: #3e2723;
-    --color-primary-50: #f5ebe9;
-    --color-primary-100: #e5d2cd;
-    --color-primary-700: #2a1b19;
+    /* Konco Space brand colors — shared with the customer and employee apps */
+    --color-primary: #1c2c22;
+    --color-primary-50: #eef2ef;
+    --color-primary-100: #dbe5de;
+    --color-primary-700: #122019;
 
-    /* Oatmeal/Cream page bg — same as employee AppColors.background */
-    --color-secondary: #f5f5dc;
-    --color-secondary-light: #fafaeb;
-    --color-secondary-dark: #dcd2b0;
+    /* Warm Ivory page background */
+    --color-secondary: #f7f7f5;
+    --color-secondary-light: #fbfbfa;
+    --color-secondary-dark: #e8e8e2;
 
-    /* Matcha Green — same as employee AppColors.accent */
-    --color-accent: #81c784;
-    --color-accent-dark: #2e7d32;
-    --color-accent-50: #e8f5e9;
+    /* Konco Gold accent */
+    --color-accent: #d4af37;
+    --color-accent-dark: #8a6f16;
+    --color-accent-50: #fbf5dc;
 
-    --color-alert: #e57373;
-    --color-alert-dark: #c45a5a;
-    --color-alert-50: #fcebeb;
+    --color-alert: #b91c1c;
+    --color-alert-dark: #991b1b;
+    --color-alert-50: #fef2f2;
 
-    /* Soft warm off-white — replaces hard #FFFFFF for all bg-white cards */
-    --color-white: #fbf7ea;
+    /* Keep Tailwind white semantic; use surface for the warm card fill. */
+    --color-surface: #ffffff;
+    --color-white: #ffffff;
 
     --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
     --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
@@ -49,13 +50,13 @@
     input:not([type="checkbox"]):not([type="radio"]),
     select,
     textarea {
-        background-color: var(--color-white);
+        background-color: var(--color-surface);
     }
 
-    /* Tighten small text legibility */
+    /* Keep compact text readable without relying on browser zoom. */
     .text-xs {
         font-size: 0.8125rem;
-        line-height: 1.15rem;
+        line-height: 1.25rem;
     }
 }
 
@@ -72,21 +73,27 @@
 }
 
 /* ─────────── Action buttons (shared across admin pages) ───────────
-   Roles: add = green, edit/update = brown, delete = red, info = warm gray.
+   Roles: add = gold, edit/update = deep pine, delete = red, info = slate.
    Add `.btn-action-lg` for form-level (Tambah/Simpan) sizing.            */
 .btn-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1.25;
     border: 1px solid transparent;
     transition: filter 0.15s, background-color 0.15s, color 0.15s;
     white-space: nowrap;
+}
+
+/* Use a quiet, adaptive boundary instead of a hard border on light surfaces. */
+.border-primary-100 {
+    border-color: rgb(28 44 34 / 0.12);
 }
 .btn-action svg {
     height: 0.875rem;
@@ -96,6 +103,7 @@
     filter: brightness(0.92);
 }
 .btn-action-lg {
+    min-height: 2.75rem;
     padding: 0.55rem 1rem;
     font-size: 0.8125rem;
     border-radius: 0.625rem;
@@ -108,7 +116,80 @@
     width: 100%;
 }
 
-/* Add — accent green, dark text for contrast on light green */
+/* Equal action tracks use the longest label without a fixed oversized width. */
+.table-actions {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(max-content, 1fr));
+    gap: 0.5rem;
+    width: max-content;
+    max-width: 100%;
+    margin-left: auto;
+    vertical-align: middle;
+}
+.table-actions > form,
+.table-actions > details,
+.table-actions > a,
+.table-actions > button,
+.table-actions--inline > form,
+.table-actions--inline > details,
+.table-actions--inline > a,
+.table-actions--inline > button {
+    width: var(--table-action-width, 5.5rem);
+    min-width: var(--table-action-width, 5.5rem);
+}
+.table-actions--stock {
+    --table-action-width: 5.75rem;
+}
+.table-actions--menu {
+    --table-action-width: 6.5rem;
+}
+.table-actions--condiment {
+    --table-action-width: 5.5rem;
+}
+.js-popover {
+    text-align: center;
+}
+.table-actions .btn-action,
+.table-actions summary,
+.table-actions--inline .btn-action,
+.table-actions--inline summary {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+}
+.table-actions summary {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.table-actions--inline {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    width: max-content;
+    max-width: 100%;
+    margin-left: auto;
+}
+.table-actions--inline > form,
+.table-actions--inline > details,
+.table-actions--inline > a,
+.table-actions--inline > button {
+    min-width: 5.5rem;
+}
+
+@media (max-width: 640px) {
+    .table-actions {
+        width: min(100%, 12rem);
+    }
+    .table-actions--inline {
+        width: max-content;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+}
+
+/* Add — gold, dark text for contrast */
 .btn-add {
     background-color: var(--color-accent);
     color: var(--color-primary);
@@ -129,7 +210,7 @@
 
 /* Delete — cinnamon red */
 .btn-delete {
-    background-color: var(--color-alert);
+    background-color: #b91c1c;
     color: #ffffff;
 }
 .btn-delete:hover {
@@ -138,11 +219,11 @@
 
 /* Info / Neutral — warm stone gray (BOM, secondary actions) */
 .btn-info {
-    background-color: #9a9285;
+    background-color: #475569;
     color: #ffffff;
 }
 .btn-info:hover {
-    background-color: #7e776b;
+    background-color: #334155;
 }
 
 /* ─────────── Status pills (shared semantic badges) ───────────
@@ -183,18 +264,18 @@
 }
 .status-pill.is-danger {
     background-color: var(--color-alert-50);
-    color: var(--color-alert-dark);
+    color: #991b1b;
     border-color: var(--color-alert);
 }
 .status-pill.is-warning {
-    background-color: #fdf3d9;
-    color: #8a6a18;
-    border-color: #e7c770;
+    background-color: #fdf7df;
+    color: #6b5610;
+    border-color: #d4af37;
 }
 .status-pill.is-info {
-    background-color: #e2effb;
-    color: #1f5f9e;
-    border-color: #8fb8e0;
+    background-color: #e8eefb;
+    color: #1e3a8a;
+    border-color: #93a9df;
 }
 .status-pill.is-muted {
     background-color: #f1f1ee;

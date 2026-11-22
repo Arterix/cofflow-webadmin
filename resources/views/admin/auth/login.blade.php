@@ -14,7 +14,7 @@
         <p class="text-sm text-gray-500">Masuk untuk mengelola coffee shop kamu</p>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+    <div class="bg-white rounded-3xl border border-primary-100 shadow-lg p-6 sm:p-8">
         @if ($errors->any())
             <div class="mb-4 rounded-lg bg-alert-50 border-l-4 border-alert text-primary-700 px-4 py-3 text-sm">
                 {{ $errors->first() }}
@@ -28,7 +28,7 @@
                 <label for="login-email" class="block text-sm font-medium text-primary mb-1">Email</label>
                 <input id="login-email" type="email" name="email" value="{{ old('email') }}" required autofocus
                        autocomplete="email" inputmode="email"
-                       class="w-full rounded-lg border border-primary-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                       class="w-full min-h-11 rounded-xl border border-primary-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </div>
 
             <div>
@@ -53,7 +53,7 @@
             </label>
 
             <button type="submit"
-                    class="w-full bg-primary text-white font-display font-medium rounded-lg px-4 py-2.5 hover:bg-primary-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2">
+                    class="w-full min-h-11 bg-primary text-white font-display font-medium rounded-full px-4 py-2.5 hover:bg-primary-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2">
                 Masuk
             </button>
         </form>

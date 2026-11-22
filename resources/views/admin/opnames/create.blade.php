@@ -46,7 +46,6 @@
             <thead class="bg-primary-50 text-xs uppercase text-primary">
                 <tr>
                     <th class="text-left px-4 py-3">Bahan</th>
-                    <th class="text-center px-4 py-3">Unit</th>
                     <th class="text-right px-4 py-3">Sistem</th>
                     <th class="text-right px-4 py-3 w-40">Fisik</th>
                     <th class="text-left px-4 py-3 w-44">Alasan selisih</th>
@@ -57,8 +56,7 @@
                 @foreach ($ingredients as $idx => $ing)
                     <tr data-row>
                         <td class="px-4 py-3 font-medium text-primary">{{ $ing->name }}</td>
-                        <td class="px-4 py-3 text-center text-xs text-gray-500">{{ $ing->unit }}</td>
-                        <td class="px-4 py-3 text-right text-gray-700 tabular-nums">{{ rtrim(rtrim((string) $ing->current_stock, '0'), '.') }}</td>
+                        <td class="px-4 py-3 text-right text-gray-700 tabular-nums">{{ rtrim(rtrim(number_format((float) $ing->current_stock, 3, ',', '.'), '0'), ',') }} {{ $ing->unit }}</td>
                         <td class="px-4 py-3 text-right">
                             <input type="hidden" name="items[{{ $idx }}][ingredient_id]" value="{{ $ing->id }}" data-hidden />
                             <input type="number" step="0.001" min="0" name="items[{{ $idx }}][physical_stock]"

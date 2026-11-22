@@ -26,12 +26,14 @@
                             <td class="px-4 py-2 text-gray-500 text-xs">{{ $cat->slug }}</td>
                             <td class="px-4 py-2 text-center">{{ $cat->menus_count }}</td>
                             <td class="px-4 py-2 text-right">
+                                <div class="table-actions">
                                 <button class="btn-action btn-edit">Simpan</button>
                         </form>
                                 <form method="POST" action="{{ route('admin.categories.destroy', $cat) }}" class="inline" onsubmit="return confirm('Hapus kategori ini?')">
                                     @csrf @method('DELETE')
                                     <button class="btn-action btn-delete">Hapus</button>
                                 </form>
+                                </div>
                             </td>
                     </tr>
                 @empty

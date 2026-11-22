@@ -7,7 +7,7 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-secondary font-sans flex items-center justify-center px-4">
+<body class="min-h-dvh bg-secondary font-sans flex items-center justify-center px-4 pb-[env(safe-area-inset-bottom)]">
     @yield('content')
 </body>
 </html>

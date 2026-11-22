@@ -34,7 +34,7 @@
             <div class="rounded-2xl border-l-4 {{ $bg }} p-5 shadow-sm">
                 <div class="flex items-start justify-between">
                     <div>
-                        <p class="text-xs uppercase tracking-wide text-gray-500 font-medium">{{ $c['label'] }}</p>
+                        <p class="text-sm uppercase tracking-wide text-gray-600 font-semibold">{{ $c['label'] }}</p>
                         <p class="mt-1 font-display text-2xl font-semibold text-primary">{{ $c['value'] }}</p>
                     </div>
                     <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl {{ $iconBg }}">
@@ -74,8 +74,9 @@
                                 ? number_format($w['revenue'] / 1000, 0, ',', '.').'rb'
                                 : (string) (int) $w['revenue']);
                     @endphp
-                    <div class="flex flex-col items-center gap-2" role="listitem">
-                        <span class="text-[11px] font-medium text-primary tabular-nums" aria-hidden="true">{{ $shortValue }}</span>
+                    <div class="flex h-full min-w-0 flex-col items-center" role="listitem">
+                        <div class="flex min-h-0 w-full flex-1 flex-col items-center justify-end gap-2">
+                            <span class="text-xs font-semibold text-primary tabular-nums" aria-hidden="true">{{ $shortValue }}</span>
                         <a href="{{ route('admin.dashboard', ['date' => $w['date']]) }}#stats"
                            class="w-full {{ $color }} rounded-t-lg relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition"
                            style="height: {{ $h }}px"
@@ -85,9 +86,10 @@
                                 Rp {{ number_format($w['revenue'], 0, ',', '.') }}
                             </span>
                         </a>
-                        <span class="text-xs {{ $isSelected ? 'text-primary font-semibold' : 'text-gray-500' }} text-center">
+                        </div>
+                        <div class="flex h-10 w-full shrink-0 items-start justify-center pt-1 text-sm leading-tight {{ $isSelected ? 'text-primary font-semibold' : 'text-gray-500' }} text-center">
                             {{ $w['label'] }}{{ $w['is_today'] ? ' •' : '' }}
-                        </span>
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -149,21 +151,21 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-primary-100">
             {{-- Total items sold --}}
             <div class="bg-white p-5">
-                <p class="text-xs uppercase tracking-wide text-gray-500 font-medium">Total Item Terjual</p>
+                <p class="text-sm uppercase tracking-wide text-gray-600 font-semibold">Total Item Terjual</p>
                 <p class="mt-1 font-display text-2xl font-semibold text-primary tabular-nums">{{ number_format($selected['total_items_sold'], 0, ',', '.') }}</p>
                 <p class="text-xs text-gray-500 mt-1">cup / unit (exclude cancelled)</p>
             </div>
 
             {{-- Net revenue --}}
             <div class="bg-white p-5">
-                <p class="text-xs uppercase tracking-wide text-gray-500 font-medium">Net Revenue (Setelah Diskon)</p>
+                <p class="text-sm uppercase tracking-wide text-gray-600 font-semibold">Net Revenue (Setelah Diskon)</p>
                 <p class="mt-1 font-display text-2xl font-semibold text-accent-dark tabular-nums">Rp {{ number_format($selected['net_revenue'], 0, ',', '.') }}</p>
                 <p class="text-xs text-gray-500 mt-1">Subtotal Rp {{ number_format($selected['subtotal'], 0, ',', '.') }}</p>
             </div>
 
             {{-- Discount total --}}
             <div class="bg-white p-5">
-                <p class="text-xs uppercase tracking-wide text-gray-500 font-medium">Total Diskon Diberikan</p>
+                <p class="text-sm uppercase tracking-wide text-gray-600 font-semibold">Total Diskon Diberikan</p>
                 <p class="mt-1 font-display text-2xl font-semibold {{ $selected['total_discount'] > 0 ? 'text-alert-dark' : 'text-primary' }} tabular-nums">
                     Rp {{ number_format($selected['total_discount'], 0, ',', '.') }}
                 </p>
@@ -178,7 +180,7 @@
 
             {{-- Peak hour --}}
             <div class="bg-white p-5">
-                <p class="text-xs uppercase tracking-wide text-gray-500 font-medium">Jam Tersibuk</p>
+                <p class="text-sm uppercase tracking-wide text-gray-600 font-semibold">Jam Tersibuk</p>
                 @if ($peak)
                     <p class="mt-1 font-display text-2xl font-semibold text-primary tabular-nums">
                         {{ str_pad((string) $peak['hour'], 2, '0', STR_PAD_LEFT) }}:00–{{ str_pad((string) ($peak['hour'] + 1), 2, '0', STR_PAD_LEFT) }}:00
@@ -192,7 +194,7 @@
 
             {{-- Cancellation --}}
             <div class="bg-white p-5">
-                <p class="text-xs uppercase tracking-wide text-gray-500 font-medium">Order Dibatalkan</p>
+                <p class="text-sm uppercase tracking-wide text-gray-600 font-semibold">Order Dibatalkan</p>
                 <div class="mt-1 flex items-baseline gap-2 flex-wrap">
                     <p class="font-display text-2xl font-semibold text-primary tabular-nums">{{ $selected['cancelled_count'] }}</p>
                     <span class="status-pill {{ $rateBadge }}">{{ number_format($selected['cancellation_rate'], 1) }}%</span>
@@ -202,7 +204,7 @@
 
             {{-- Top 3 menus that day --}}
             <div class="bg-white p-5 sm:col-span-2 lg:col-span-1">
-                <p class="text-xs uppercase tracking-wide text-gray-500 font-medium mb-2">Top 3 Menu Hari Ini</p>
+                <p class="text-sm uppercase tracking-wide text-gray-600 font-semibold mb-2">Top 3 Menu Hari Ini</p>
                 @if ($selected['top_menus']->isEmpty())
                     <p class="text-sm text-gray-400 italic">Belum ada penjualan</p>
                 @else

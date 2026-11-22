@@ -13,7 +13,7 @@
        class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 bg-primary text-white px-3 py-2 rounded-lg text-sm">
         Lompat ke konten utama
     </a>
-    <div class="min-h-screen md:flex">
+    <div class="min-h-dvh md:flex">
         @include('admin.partials.sidebar')
 
         {{-- Mobile backdrop --}}
@@ -32,7 +32,7 @@
                 @endif
                 @if ($errors->any() && ! request()->routeIs('admin.login'))
                     <div class="mb-4 rounded-lg bg-alert-50 border-l-4 border-alert text-primary-700 px-4 py-3">
-                        <ul class="list-disc list-inside text-sm">
+                        <ul class="list-disc list-inside text-base">
                             @foreach ($errors->all() as $err)
                                 <li>{{ $err }}</li>
                             @endforeach

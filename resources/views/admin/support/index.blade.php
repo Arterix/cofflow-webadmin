@@ -5,12 +5,12 @@
 @section('page_sub', 'Balas pertanyaan customer dari aplikasi')
 
 @section('content')
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:h-[calc(100dvh-8rem)]">
     <div class="bg-white rounded-2xl border border-primary-100 shadow-sm overflow-hidden {{ $active ? 'hidden lg:block' : '' }}">
         <div class="px-4 py-3 border-b border-primary-100 bg-primary-50 text-xs uppercase tracking-wide text-primary font-medium">
             Percakapan
         </div>
-        <ul class="divide-y divide-primary-100 max-h-[70vh] overflow-y-auto">
+        <ul class="divide-y divide-primary-100 lg:h-0 lg:flex-1 overflow-y-auto">
             @forelse ($threads as $t)
                 @php $isActive = $active && $active->id === $t->customer_id; @endphp
                 <li>
@@ -34,7 +34,7 @@
         </ul>
     </div>
 
-    <div class="lg:col-span-2 bg-white rounded-2xl border border-primary-100 shadow-sm flex flex-col min-h-[60vh] {{ $active ? '' : 'hidden lg:flex' }}">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-primary-100 shadow-sm flex flex-col min-h-[60dvh] lg:min-h-0 {{ $active ? '' : 'hidden lg:flex' }}">
         @if ($active)
             <div class="px-4 py-3 border-b border-primary-100 flex items-center gap-3">
                 <a href="{{ route('admin.support.index') }}" class="lg:hidden text-sm text-primary">&larr;</a>
@@ -44,7 +44,7 @@
                 </div>
             </div>
 
-            <div id="chat-scroll" class="flex-1 overflow-y-auto p-4 space-y-3 max-h-[60vh] bg-secondary/40">
+            <div id="chat-scroll" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-secondary/40">
                 @foreach ($messages as $m)
                     <div class="flex {{ $m->from_customer ? 'justify-start' : 'justify-end' }}">
                         <div class="max-w-[75%] rounded-2xl px-4 py-2 text-sm whitespace-pre-line

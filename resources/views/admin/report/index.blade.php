@@ -76,7 +76,7 @@
                 <thead class="text-xs text-gray-500"><tr><th class="text-left py-2">Waktu</th><th class="text-left">Bahan</th><th class="text-left">Jenis</th><th class="text-right">Perubahan</th><th class="text-left">Keterangan</th></tr></thead>
                 <tbody class="divide-y divide-primary-100">
                     @forelse ($stockMovements as $movement)
-                        <tr><td class="py-2">{{ $movement->created_at->format('d/m/Y H:i') }}</td><td>{{ $movement->ingredient?->name }}</td><td>{{ $movement->type }}</td><td class="text-right {{ $movement->delta >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ $movement->delta >= 0 ? '+' : '' }}{{ number_format((float) $movement->delta, 3, ',', '.') }} {{ $movement->ingredient?->unit }}</td><td>{{ $movement->reason }}</td></tr>
+                        <tr><td class="py-2">{{ $movement->created_at->format('d/m/Y H:i') }}</td><td>{{ $movement->ingredient?->name }}</td><td>{{ $movement->type }}</td><td class="text-right {{ $movement->delta >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ $movement->delta >= 0 ? '+' : '' }}{{ rtrim(rtrim(number_format((float) $movement->delta, 3, ',', '.'), '0'), ',') }} {{ $movement->ingredient?->unit }}</td><td>{{ $movement->reason }}</td></tr>
                     @empty
                         <tr><td colspan="5" class="py-6 text-center text-gray-500">Belum ada mutasi stok</td></tr>
                     @endforelse

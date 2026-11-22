@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between px-4 sm:px-6 py-3 gap-3">
         <div class="flex items-center gap-3 min-w-0">
             <button type="button" onclick="window.toggleSidebar && window.toggleSidebar()"
-                    class="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-primary-100 text-primary hover:bg-secondary"
+                    class="md:hidden inline-flex h-11 w-11 items-center justify-center rounded-xl border border-primary-100 text-primary hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     aria-label="Buka menu">
                 <x-icon name="menu" class="h-5 w-5" />
             </button>
@@ -15,7 +15,7 @@
         <div class="flex items-center gap-3 sm:gap-4 shrink-0">
             <span class="text-sm text-gray-500 hidden lg:block">{{ now()->format('d M Y, H:i') }}</span>
             <div class="flex items-center gap-2" aria-label="Akun pengguna">
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white font-display font-semibold"
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary text-white font-display font-semibold"
                       aria-hidden="true" title="{{ auth()->user()->name }}">
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 </span>

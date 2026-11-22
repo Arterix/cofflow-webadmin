@@ -200,9 +200,10 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <details class="js-popover inline-block text-left relative">
+                                    <div class="table-actions">
+                                    <details class="js-popover relative">
                                         <summary class="btn-action btn-edit cursor-pointer list-none">Edit</summary>
-                                        <form method="POST" action="{{ route('admin.discounts.reward.update', $r) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-72 space-y-2 shadow-lg">
+                                        <form method="POST" action="{{ route('admin.discounts.reward.update', $r) }}" class="absolute left-1/2 -translate-x-1/2 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-72 space-y-2 shadow-lg">
                                             @csrf @method('PUT')
                                             @include('admin.discounts.partials.reward-fields', ['reward' => $r, 'input' => 'w-full rounded-md border border-primary-100 px-2 py-1 text-sm'])
                                             <button class="btn-action btn-edit btn-action-block">Simpan</button>
@@ -216,6 +217,7 @@
                                         @csrf @method('DELETE')
                                         <button class="btn-action btn-delete">Hapus</button>
                                     </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

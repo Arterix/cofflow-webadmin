@@ -1,17 +1,17 @@
 @php
     $navItems = [
-        ['route' => 'admin.dashboard',         'match' => 'admin.dashboard',    'label' => 'Dashboard',     'icon' => 'dashboard'],
-        ['route' => 'admin.menus.index',       'match' => 'admin.menus.*',      'label' => 'Menu',          'icon' => 'restaurant_menu'],
-        ['route' => 'admin.categories.index',  'match' => 'admin.categories.*', 'label' => 'Kategori',      'icon' => 'category'],
-        ['route' => 'admin.condiments.index',  'match' => 'admin.condiments.*', 'label' => 'Opsi Tambahan',     'icon' => 'tune'],
-        ['route' => 'admin.ingredients.index', 'match' => 'admin.ingredients.*','label' => 'Stok',          'icon' => 'inventory_2'],
-        ['route' => 'admin.opnames.index',     'match' => 'admin.opnames.*',    'label' => 'Opname Stok',   'icon' => 'fact_check'],
-        ['route' => 'admin.discounts.index',   'match' => 'admin.discounts.*',  'label' => 'Diskon',        'icon' => 'local_offer'],
-        ['route' => 'admin.membership.index',  'match' => 'admin.membership.*', 'label' => 'Membership',    'icon' => 'loyalty'],
-        ['route' => 'admin.orders.index',      'match' => 'admin.orders.*',     'label' => 'Order Monitor', 'icon' => 'receipt_long'],
-        ['route' => 'admin.staff.index',       'match' => 'admin.staff.*',      'label' => 'Pegawai',       'icon' => 'groups'],
-        ['route' => 'admin.report.index',      'match' => 'admin.report.*',     'label' => 'Laporan',       'icon' => 'assessment'],
-        ['route' => 'admin.support.index',     'match' => 'admin.support.*',    'label' => 'Chat CS',       'icon' => 'support_agent'],
+        ['section' => 'Utama', 'route' => 'admin.dashboard',         'match' => 'admin.dashboard',    'label' => 'Dashboard',     'icon' => 'dashboard'],
+        ['section' => 'Katalog & Stok', 'route' => 'admin.menus.index',       'match' => 'admin.menus.*',      'label' => 'Menu',          'icon' => 'restaurant_menu'],
+        ['section' => 'Katalog & Stok', 'route' => 'admin.categories.index',  'match' => 'admin.categories.*', 'label' => 'Kategori',      'icon' => 'category'],
+        ['section' => 'Katalog & Stok', 'route' => 'admin.condiments.index',  'match' => 'admin.condiments.*', 'label' => 'Opsi Tambahan',     'icon' => 'tune'],
+        ['section' => 'Katalog & Stok', 'route' => 'admin.ingredients.index', 'match' => 'admin.ingredients.*','label' => 'Stok',          'icon' => 'inventory_2'],
+        ['section' => 'Katalog & Stok', 'route' => 'admin.opnames.index',     'match' => 'admin.opnames.*',    'label' => 'Opname Stok',   'icon' => 'fact_check'],
+        ['section' => 'Pelanggan & Penjualan', 'route' => 'admin.discounts.index',   'match' => 'admin.discounts.*',  'label' => 'Diskon',        'icon' => 'local_offer'],
+        ['section' => 'Pelanggan & Penjualan', 'route' => 'admin.membership.index',  'match' => 'admin.membership.*', 'label' => 'Membership',    'icon' => 'loyalty'],
+        ['section' => 'Pelanggan & Penjualan', 'route' => 'admin.orders.index',      'match' => 'admin.orders.*',     'label' => 'Order Monitor', 'icon' => 'receipt_long'],
+        ['section' => 'Sistem', 'route' => 'admin.staff.index',       'match' => 'admin.staff.*',      'label' => 'Pegawai',       'icon' => 'groups'],
+        ['section' => 'Sistem', 'route' => 'admin.report.index',      'match' => 'admin.report.*',     'label' => 'Laporan',       'icon' => 'assessment'],
+        ['section' => 'Sistem', 'route' => 'admin.support.index',     'match' => 'admin.support.*',    'label' => 'Chat CS',       'icon' => 'support_agent'],
     ];
 @endphp
 
@@ -38,7 +38,12 @@
     </div>
 
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        @php $currentSection = null; @endphp
         @foreach ($navItems as $item)
+            @if ($currentSection !== $item['section'])
+                @php $currentSection = $item['section']; @endphp
+                <p class="px-4 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-white/50">{{ $currentSection }}</p>
+            @endif
             @php $isActive = request()->routeIs($item['match']); @endphp
             <a href="{{ route($item['route']) }}"
                @if ($isActive) aria-current="page" @endif

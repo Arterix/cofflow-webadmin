@@ -22,7 +22,6 @@
                 <thead class="bg-primary-50 text-xs uppercase tracking-wide text-primary">
                     <tr>
                         <th class="text-left px-4 py-3">Nama</th>
-                        <th class="text-center px-4 py-3">Unit</th>
                         <th class="text-right px-4 py-3">Stok Saat Ini</th>
                         <th class="text-right px-4 py-3">Min</th>
                         <th class="text-right px-4 py-3">Aksi</th>
@@ -37,14 +36,14 @@
                                     <span class="status-pill is-danger mt-0.5">Kritis</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-center text-xs text-gray-500">{{ $i->unit }}</td>
-                            <td class="px-4 py-3 text-right">{{ rtrim(rtrim((string) $i->current_stock, '0'), '.') }}</td>
-                            <td class="px-4 py-3 text-right text-gray-500">{{ rtrim(rtrim((string) $i->minimum_stock, '0'), '.') }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums">{{ rtrim(rtrim(number_format((float) $i->current_stock, 3, ',', '.'), '0'), ',') }} {{ $i->unit }}</td>
+                            <td class="px-4 py-3 text-right text-gray-500 tabular-nums">{{ rtrim(rtrim(number_format((float) $i->minimum_stock, 3, ',', '.'), '0'), ',') }} {{ $i->unit }}</td>
                             <td class="px-4 py-3 text-right">
+                                <div class="table-actions table-actions--stock">
                                 {{-- Restock: tambah jumlah --}}
-                                <details class="js-popover inline-block text-left relative">
+                                <details class="js-popover relative">
                                     <summary class="btn-action btn-add cursor-pointer list-none">Restock</summary>
-                                    <form method="POST" action="{{ route('admin.ingredients.restock', $i) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-52 space-y-2 shadow-lg">
+                                    <form method="POST" action="{{ route('admin.ingredients.restock', $i) }}" class="absolute left-1/2 -translate-x-1/2 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-52 space-y-2 shadow-lg">
                                         @csrf @method('PATCH')
                                         <p class="text-xs text-gray-500">Tambah ke stok saat ini ({{ rtrim(rtrim((string) $i->current_stock,'0'),'.') }} {{ $i->unit }})</p>
                                         <input type="number" step="0.001" min="0.001" name="amount" placeholder="+jumlah" class="w-full rounded-md border border-primary-100 px-2 py-1 text-xs" required />
@@ -54,9 +53,9 @@
                                 </details>
 
                                 {{-- Atur Stok: set nilai absolut (koreksi manual) --}}
-                                <details class="js-popover inline-block text-left relative">
+                                <details class="js-popover relative">
                                     <summary class="btn-action btn-info cursor-pointer list-none">Atur Stok</summary>
-                                    <form method="POST" action="{{ route('admin.ingredients.adjust', $i) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-60 space-y-2 shadow-lg">
+                                    <form method="POST" action="{{ route('admin.ingredients.adjust', $i) }}" class="absolute left-1/2 -translate-x-1/2 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-60 space-y-2 shadow-lg">
                                         @csrf @method('PATCH')
                                         <p class="text-xs text-gray-500 font-medium">Atur stok absolut (koreksi fisik)</p>
                                         <p class="text-xs text-gray-400">Saat ini: {{ rtrim(rtrim((string) $i->current_stock,'0'),'.') }} {{ $i->unit }}</p>
@@ -75,9 +74,9 @@
                                 </details>
 
                                 {{-- Edit info bahan --}}
-                                <details class="js-popover inline-block text-left relative">
+                                <details class="js-popover relative">
                                     <summary class="btn-action btn-edit cursor-pointer list-none">Edit</summary>
-                                    <form method="POST" action="{{ route('admin.ingredients.update', $i) }}" class="absolute right-0 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
+                                    <form method="POST" action="{{ route('admin.ingredients.update', $i) }}" class="absolute left-1/2 -translate-x-1/2 mt-1 z-10 bg-white border border-primary-100 rounded-lg p-3 w-64 space-y-2 shadow-lg">
                                         @csrf @method('PUT')
                                         <p class="text-xs text-gray-500 font-medium">Edit info bahan</p>
                                         <input name="name" value="{{ $i->name }}" required class="w-full rounded-md border border-primary-100 px-2 py-1 text-sm" placeholder="Nama bahan" />
@@ -95,11 +94,12 @@
                                     @csrf @method('DELETE')
                                     <button class="btn-action btn-delete">Hapus</button>
                                 </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-12 text-center text-sm text-gray-500">
+                            <td colspan="4" class="px-4 py-12 text-center text-sm text-gray-500">
                                 <x-icon name="inventory_2" class="mx-auto h-10 w-10 text-gray-300 mb-2" />
                                 Belum ada bahan baku. Tambah lewat form di samping.
                             </td>
